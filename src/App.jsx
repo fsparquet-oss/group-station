@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "./supabase";
-import { C, Logo, Btn, Card, Field, Vuoto, settimanaScorsa } from "./ui";
+import { C, Logo, Btn, Card, Field, Vuoto, settimanaScorsa, oggi } from "./ui";
 import { Home, Azienda, Accessi } from "./views";
 export { salva, elimina } from "./db";
 
-const TABELLE = ["gs_aziende", "gs_kpi", "gs_kpi_valori", "gs_persone", "gs_obiettivi", "gs_scadenze", "gs_attrezzature", "gs_procedure", "gs_documenti", "gs_onboarding", "gs_accessi"];
-const ORDINE = { gs_aziende: "ordine", gs_kpi: "ordine", gs_persone: "ordine", gs_onboarding: "ordine" };
+const TABELLE = ["gs_aziende", "gs_kpi", "gs_kpi_valori", "gs_persone", "gs_obiettivi", "gs_scadenze", "gs_attrezzature", "gs_procedure", "gs_documenti", "gs_onboarding", "gs_accessi", "gs_controlli", "gs_controlli_valori"];
+const ORDINE = { gs_aziende: "ordine", gs_kpi: "ordine", gs_persone: "ordine", gs_onboarding: "ordine", gs_controlli: "ordine" };
 
 function useDati(attivo) {
   const [d, setD] = useState(null);
@@ -13,6 +13,7 @@ function useDati(attivo) {
     const res = await Promise.all(TABELLE.map((t) => {
       let q = supabase.from(t).select("*");
       q = ORDINE[t] ? q.order(ORDINE[t]).order("id") : q.order("id");
+      if (t === "gs_controlli_valori") q = supabase.from(t).select("*").gte("giorno", new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10));
       if (t === "gs_kpi_valori") q = supabase.from(t).select("*").gte("settimana", new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10)).order("settimana");
       return q;
     }));
@@ -67,6 +68,7 @@ export default function App() {
   const vai = (v) => { setVista(v); try { localStorage.setItem("gs_vista", JSON.stringify(v)); } catch {} window.scrollTo(0, 0); };
   const mobile = useMobile();
   const [sett, setSett] = useState(settimanaScorsa());
+  const [giorno, setGiorno] = useState(oggi());
 
   const email = sessione?.user?.email?.toLowerCase() || "";
   const mieiAccessi = useMemo(() => (d?.accessi || []).filter((a) => a.email.toLowerCase() === email), [d, email]);
@@ -92,7 +94,7 @@ export default function App() {
   const aziende = d.aziende;
   const visibili = aziende.filter((a) => admin || mieiAccessi.some((x) => x.azienda_id === a.id));
   const azienda = vista.tipo === "azienda" ? aziende.find((a) => a.id === vista.id) : null;
-  const ctx = { d, ricarica, admin, puoScrivere, email, vai, mobile, sett, setSett };
+  const ctx = { d, ricarica, admin, puoScrivere, email, vai, mobile, sett, setSett, giorno, setGiorno };
   const pill = { border: "none", borderRadius: 999, background: C.card, color: C.text, fontSize: 14, fontWeight: 500, padding: "9px 16px", whiteSpace: "nowrap" };
 
   return (
@@ -110,7 +112,7 @@ export default function App() {
         {visibili.map((a) => {
           const sel = azienda?.id === a.id, pausa = a.stato === "in pausa";
           return (
-            <button key={a.id} onClick={() => vai({ tipo: "azienda", id: a.id, tab: "panoramica" })} style={{ ...pill, display: "flex", alignItems: "center", gap: 9, background: sel ? C.text : C.card, color: sel ? "#fff" : pausa ? C.grey : C.text }}>
+            <button key={a.id} onClick={() => vai({ tipo: "azienda", id: a.id, tab: "oggi" })} style={{ ...pill, display: "flex", alignItems: "center", gap: 9, background: sel ? C.text : C.card, color: sel ? "#fff" : pausa ? C.grey : C.text }}>
               <span style={{ width: 9, height: 9, borderRadius: "50%", background: pausa ? C.line : a.colore, flexShrink: 0 }} />{a.nome}
             </button>
           );
@@ -118,7 +120,7 @@ export default function App() {
       </nav>
       {d.errore && <Card style={{ color: C.red, marginBottom: 14 }}>Errore nel caricamento: {d.errore}</Card>}
       {vista.tipo === "accessi" && admin ? <Accessi ctx={ctx} />
-        : azienda ? <Azienda ctx={ctx} azienda={azienda} tab={vista.tab || "panoramica"} setTab={(t) => vai({ ...vista, tab: t })} />
+        : azienda ? <Azienda ctx={ctx} azienda={azienda} tab={vista.tab || "oggi"} setTab={(t) => vai({ ...vista, tab: t })} />
         : vista.tipo === "azienda" ? <Vuoto>Azienda non trovata.</Vuoto>
         : <Home ctx={ctx} />}
     </div>

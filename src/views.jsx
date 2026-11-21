@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { supabase } from "./supabase";
 import { salva, elimina } from "./db";
+import { OggiGruppo, ControlliAzienda, SceltaGiorno, ObiettiviNumerici, AlberoOrg } from "./oggi";
 import { C, Btn, Card, Field, Modal, Chip, Dot, Vuoto, griglia, Label, Tile, Segment, Fab, euro, num, data, oggi, giorniA, settimanaScorsa, spostaSettimana, nomeSettimana, esitoKpi, coloreEsito, etichetta } from "./ui";
 
 const COEFF_COSTO = 1.95; // costo azienda stimato = netto × 1,95 (da verificare col consulente del lavoro)
@@ -69,6 +70,7 @@ function TileKpi({ k, v, small }) {
 export function Home({ ctx }) {
   const { d, vai, admin, sett } = ctx;
   const [nuova, setNuova] = useState(false);
+  const [vistaHome, setVistaHome] = useState("oggi");
   const visibili = d.aziende.filter((a) => admin || d.accessi.some((x) => x.azienda_id === a.id && x.email.toLowerCase() === ctx.email));
   const attive = visibili.filter((a) => a.stato !== "in pausa");
   const pausa = visibili.filter((a) => a.stato === "in pausa");
@@ -83,6 +85,13 @@ export function Home({ ctx }) {
         <div><div style={{ fontSize: 34, fontWeight: 650, letterSpacing: -1 }}>Il gruppo</div><div style={{ fontSize: 15, color: C.grey, marginTop: 2 }}>{attive.length} aziende attive{pausa.length ? ` · ${pausa.length} in pausa` : ""}</div></div>
         {admin && <Btn variant="red" onClick={() => setNuova(true)} style={{ padding: "13px 20px", fontSize: 15 }}>+ Azienda</Btn>}
       </div>
+      <Segment items={[["oggi", "Oggi"], ["settimana", "Settimana"], ["obiettivi", "Obiettivi"]]} value={vistaHome} onChange={setVistaHome} style={{ display: "inline-flex", marginBottom: 16 }} />
+      {vistaHome === "oggi" && <OggiGruppo ctx={ctx} aziende={attive} />}
+      {vistaHome === "obiettivi" && <>
+        <div style={{ fontSize: 13.5, color: C.grey, marginBottom: 12 }}>Tocca il numero sottolineato per aggiornarlo.</div>
+        <ObiettiviNumerici ctx={ctx} lista={d.obiettivi.filter((o) => ids.has(o.azienda_id) && o.valore_obiettivo != null)} scrive={admin} mostraAzienda />
+      </>}
+      {vistaHome === "settimana" && <>
       <SceltaSettimana ctx={ctx} />
 
       <div style={{ ...sfondoPunti, borderRadius: 24, padding: "20px 22px", color: "#fff", marginTop: 16 }}>
@@ -105,7 +114,7 @@ export function Home({ ctx }) {
           const ob = d.obiettivi.filter((o) => o.azienda_id === a.id && o.stato !== "fatto").length;
           const stato = rossi ? C.red : kpi.length && !vuoti ? C.green : C.line;
           return (
-            <Card key={a.id} onClick={() => vai({ tipo: "azienda", id: a.id, tab: "panoramica" })} style={{ cursor: "pointer", padding: 18 }}>
+            <Card key={a.id} onClick={() => vai({ tipo: "azienda", id: a.id, tab: "oggi" })} style={{ cursor: "pointer", padding: 18 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
                 <span style={{ fontSize: 12, color: C.grey, fontWeight: 600 }}>{String(i + 1).padStart(2, "0")}</span><Dot color={a.colore} size={10} />
                 <b style={{ fontSize: 19, fontWeight: 600, flex: 1 }}>{a.nome}</b><Dot color={stato} size={13} />
@@ -123,10 +132,11 @@ export function Home({ ctx }) {
         })}
       </div>
 
+      </>}
       {pausa.length > 0 && <>
         {sezione("In pausa")}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {pausa.map((a) => <Chip key={a.id} onClick={() => vai({ tipo: "azienda", id: a.id, tab: "panoramica" })} bg={C.card} style={{ padding: "7px 13px", fontSize: 13 }}>{a.nome}{a.pausa_fino ? ` · fino al ${data(a.pausa_fino)}` : ""}</Chip>)}
+          {pausa.map((a) => <Chip key={a.id} onClick={() => vai({ tipo: "azienda", id: a.id, tab: "oggi" })} bg={C.card} style={{ padding: "7px 13px", fontSize: 13 }}>{a.nome}{a.pausa_fino ? ` · fino al ${data(a.pausa_fino)}` : ""}</Chip>)}
         </div>
       </>}
       {nuova && <ModificaAzienda ctx={ctx} azienda={{ nome: "", descrizione: "", colore: "#4f7cac", stato: "attiva", ordine: d.aziende.length + 1 }} onClose={() => setNuova(false)} />}
@@ -135,7 +145,7 @@ export function Home({ ctx }) {
 }
 
 // ─────────────────────────────────────────── AZIENDA
-const TABS = [["panoramica", "Panoramica"], ["kpi", "KPI"], ["organigramma", "Organigramma"], ["persone", "Persone"], ["scadenze", "Scadenze"], ["obiettivi", "Obiettivi"], ["procedure", "Procedure"], ["documenti", "Documenti"]];
+const TABS = [["oggi", "Oggi"], ["obiettivi", "Obiettivi"], ["organigramma", "Organigramma"], ["persone", "Persone"], ["scadenze", "Scadenze"], ["kpi", "Numeri settimana"], ["procedure", "Procedure"], ["documenti", "Documenti"]];
 
 export function Azienda({ ctx, azienda, tab, setTab }) {
   const scrive = ctx.puoScrivere(azienda.id);
@@ -151,8 +161,8 @@ export function Azienda({ ctx, azienda, tab, setTab }) {
         </div>
         {ctx.admin && <Btn variant="ghost" onClick={() => setModAz(true)} style={{ padding: "12px 20px" }}>Impostazioni</Btn>}
       </div>
-      <Segment items={TABS} value={tab} onChange={setTab} style={{ marginBottom: 18 }} />
-      {tab === "panoramica" && <Panoramica {...p} setTab={setTab} />}
+      <Segment items={TABS} value={tab === "panoramica" ? "oggi" : tab} onChange={setTab} style={{ marginBottom: 18 }} />
+      {(tab === "oggi" || tab === "panoramica") && <><SceltaGiorno ctx={ctx} /><div style={{ height: 12 }} /><ControlliAzienda ctx={ctx} azienda={azienda} scrive={scrive} titolo={false} /></>}
       {tab === "kpi" && <Kpi {...p} />}
       {tab === "organigramma" && <Organigramma {...p} />}
       {tab === "persone" && <Persone {...p} />}
@@ -336,6 +346,7 @@ function ModificaKpi({ ctx, k, azienda, onClose }) {
 function Organigramma({ ctx, azienda, scrive }) {
   const { d } = ctx;
   const [vista, setVista] = useState("org");
+  const [zoom, setZoom] = useState(ctx.mobile ? 0.75 : "adatta");
   const [aperta, setAperta] = useState(null);
   const pers = d.persone.filter((p) => p.azienda_id === azienda.id);
   const ids = new Set(pers.map((p) => p.id));
@@ -370,12 +381,19 @@ function Organigramma({ ctx, azienda, scrive }) {
       </div>
       <div style={{ height: 6, background: C.line, borderRadius: 9, margin: "14px 0 10px", overflow: "hidden" }}><div style={{ width: (pers.length ? (coperti / pers.length) * 100 : 0) + "%", height: "100%", background: C.red, borderRadius: 9 }} /></div>
       <div style={{ fontSize: 14, color: C.slate, marginBottom: 14 }}>Costo del personale in organigramma: <b style={{ color: C.text }}>{euro(costo)}/mese</b>{costoVuote ? ` · ruoli da coprire: ${euro(costoVuote)}/mese` : ""}</div>
-      <Segment items={[["org", "Organigramma"], ["vuote", `Da coprire (${vuote.length})`]]} value={vista} onChange={setVista} accent={C.red} style={{ display: "inline-flex", marginBottom: 14 }} />
+      <Segment items={[["org", "Organigramma"], ["lista", "Elenco"], ["vuote", `Da coprire (${vuote.length})`]]} value={vista} onChange={setVista} accent={C.red} style={{ display: "inline-flex", marginBottom: 14 }} />
       {vista === "vuote" ? (
         <div style={{ display: "grid", gap: 10 }}>{vuote.length === 0 ? <Card><Vuoto>Tutti i ruoli sono coperti.</Vuoto></Card> : vuote.map((p) => (
           <div key={p.id}><Scheda p={p} />{(p.costo_mensile || p.ricavo_atteso) && <div style={{ fontSize: 12.5, color: C.grey, margin: "6px 4px 0" }}>{p.costo_mensile ? `Costo stimato ${euro(p.costo_mensile)}/mese` : ""}{p.ricavo_atteso ? ` · deve portare ${euro(p.ricavo_atteso)}/mese` : ""}</div>}</div>))}</div>
-      ) : (
+      ) : vista === "lista" ? (
         <div style={{ display: "grid", gap: 10 }}>{pers.length === 0 ? <Card><Vuoto>Organigramma vuoto.</Vuoto></Card> : figli(null).map((p) => <Ramo key={p.id} p={p} liv={0} />)}</div>
+      ) : (
+        <>
+          <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", marginBottom: 8 }}>
+            {[["adatta", "Tutto"], [0.75, "75%"], [1, "100%"]].map(([z, l]) => <Btn key={z} small variant={zoom === z ? "dark" : "ghost"} onClick={() => setZoom(z)}>{l}</Btn>)}
+          </div>
+          <AlberoOrg pers={pers} onApri={setAperta} zoom={zoom} />
+        </>
       )}
       {scrive && <Fab onClick={() => setAperta({ azienda_id: azienda.id, ruolo: "", responsabile_id: null })}>+ Ruolo</Fab>}
       {aperta && <SchedaPersona ctx={ctx} azienda={azienda} scrive={scrive} p={aperta} onClose={() => setAperta(null)} />}
@@ -647,11 +665,16 @@ function Obiettivi({ ctx, azienda, scrive }) {
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 12.5, color: C.grey }}>Tocca lo stato per cambiarlo: da fare → in corso → fatto.</span>
-        <div style={{ display: "flex", gap: 8 }}><Btn small variant="ghost" onClick={() => setMostraFatti((x) => !x)}>{mostraFatti ? "Nascondi fatti" : `Mostra fatti (${ob.filter((o) => o.stato === "fatto").length})`}</Btn>{scrive && <Btn small onClick={() => setMod({ azienda_id: azienda.id, stato: "da fare" })}>＋ Obiettivo</Btn>}</div>
+        <span style={{ fontSize: 12.5, color: C.grey }}>Con un numero diventano barre da riempire; senza numero sono cose da fare.</span>
+        <div style={{ display: "flex", gap: 8 }}><Btn small variant="ghost" onClick={() => setMostraFatti((x) => !x)}>{mostraFatti ? "Nascondi fatti" : `Mostra fatti (${ob.filter((o) => o.stato === "fatto" && o.valore_obiettivo == null).length})`}</Btn>{scrive && <Btn small onClick={() => setMod({ azienda_id: azienda.id, stato: "da fare" })}>＋ Obiettivo</Btn>}</div>
       </div>
+      {ob.some((o) => o.valore_obiettivo != null) && <>
+        <Label style={{ marginBottom: 10 }}>Obiettivi a numero · tocca il numero per aggiornarlo</Label>
+        <ObiettiviNumerici ctx={ctx} lista={ob.filter((o) => o.valore_obiettivo != null)} scrive={scrive} onApri={setMod} />
+        <Label style={{ margin: "22px 0 10px" }}>Da fare</Label>
+      </>}
       <Card style={{ padding: "4px 18px" }}>
-        {ob.filter((o) => mostraFatti || o.stato !== "fatto").map((o, i) => (
+        {ob.filter((o) => o.valore_obiettivo == null && (mostraFatti || o.stato !== "fatto")).map((o, i) => (
           <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderTop: i ? `1px solid ${C.soft}` : "none", flexWrap: "wrap" }}>
             <Chip color={col[o.stato]} onClick={scrive ? () => giro(o) : undefined} style={{ minWidth: 70, justifyContent: "center" }}>{o.stato}</Chip>
             <div onClick={() => scrive && setMod(o)} style={{ flex: 1, minWidth: 180, cursor: scrive ? "pointer" : "default" }}>
@@ -660,7 +683,7 @@ function Obiettivi({ ctx, azienda, scrive }) {
             </div>
             {o.scadenza && <span style={{ fontSize: 12.5, color: o.stato !== "fatto" && giorniA(o.scadenza) < 0 ? C.red : C.grey }}>{data(o.scadenza)}</span>}
           </div>))}
-        {ob.length === 0 && <Vuoto>Nessun obiettivo.</Vuoto>}
+        {ob.filter((o) => o.valore_obiettivo == null).length === 0 && <Vuoto>Nessun obiettivo senza numero.</Vuoto>}
       </Card>
       {mod && <ModificaObiettivo ctx={ctx} azienda={azienda} o={mod} onClose={() => setMod(null)} />}
     </>
@@ -670,12 +693,18 @@ function Obiettivi({ ctx, azienda, scrive }) {
 function ModificaObiettivo({ ctx, azienda, o, onClose }) {
   const [f, setF] = useState(o);
   const s = (k) => (v) => setF((x) => ({ ...x, [k]: v }));
-  const ok = async () => { if (!f.titolo) return alert("Scrivi l'obiettivo"); await salva("gs_obiettivi", { id: f.id, azienda_id: azienda.id, titolo: f.titolo, descrizione: f.descrizione || null, scadenza: f.scadenza || null, stato: f.stato, responsabile: f.responsabile || null }); await ctx.ricarica(); onClose(); };
+  const n = (v) => v === "" || v == null ? null : Number(String(v).replace(/\./g, "").replace(",", "."));
+  const ok = async () => { if (!f.titolo) return alert("Scrivi l'obiettivo"); await salva("gs_obiettivi", { id: f.id, azienda_id: azienda.id, titolo: f.titolo, descrizione: f.descrizione || null, scadenza: f.scadenza || null, stato: f.stato, responsabile: f.responsabile || null, valore_obiettivo: n(f.valore_obiettivo), valore_attuale: n(f.valore_attuale), unita: f.unita || null }); await ctx.ricarica(); onClose(); };
   const del = async () => { if (!confirm("Eliminare l'obiettivo?")) return; await elimina("gs_obiettivi", f.id); await ctx.ricarica(); onClose(); };
   return (
     <Modal title={f.id ? "Obiettivo" : "Nuovo obiettivo"} onClose={onClose}>
       <div style={{ display: "grid", gap: 12 }}>
         <Field label="Obiettivo" value={f.titolo} onChange={s("titolo")} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+          <Field label="Dove sei ora" type="number" value={f.valore_attuale} onChange={s("valore_attuale")} />
+          <Field label="Obiettivo (numero)" type="number" value={f.valore_obiettivo} onChange={s("valore_obiettivo")} hint="Vuoto = cosa da fare" />
+          <Field label="Unità" value={f.unita} onChange={s("unita")} placeholder="€, mq, clienti…" />
+        </div>
         <Field label="Dettagli" area={3} value={f.descrizione} onChange={s("descrizione")} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
           <Field label="Entro il" type="date" value={f.scadenza} onChange={s("scadenza")} />

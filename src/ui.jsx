@@ -13,7 +13,7 @@ export const num = (n, unita) => {
   return Number(n).toLocaleString("it-IT", { maximumFractionDigits: 1, useGrouping: "always" }) + (unita && unita !== "n" ? " " + unita : "");
 };
 export const data = (d) => d ? new Date(d + (String(d).length === 10 ? "T12:00:00" : "")).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" }) : "—";
-export const oggi = () => new Date().toISOString().slice(0, 10);
+export const oggi = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 export const giorniA = (d) => Math.round((new Date(d + "T12:00:00") - new Date(oggi() + "T12:00:00")) / 86400000);
 
 // Lunedì della settimana di una data
