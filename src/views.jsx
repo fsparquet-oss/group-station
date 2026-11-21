@@ -85,8 +85,9 @@ export function Home({ ctx }) {
         <div><div style={{ fontSize: 34, fontWeight: 650, letterSpacing: -1 }}>Il gruppo</div><div style={{ fontSize: 15, color: C.grey, marginTop: 2 }}>{attive.length} aziende attive{pausa.length ? ` · ${pausa.length} in pausa` : ""}</div></div>
         {admin && <Btn variant="red" onClick={() => setNuova(true)} style={{ padding: "13px 20px", fontSize: 15 }}>+ Azienda</Btn>}
       </div>
-      <Segment items={[["oggi", "Oggi"], ["settimana", "Settimana"], ["obiettivi", "Obiettivi"]]} value={vistaHome} onChange={setVistaHome} style={{ display: "inline-flex", marginBottom: 16 }} />
+      <Segment items={[["oggi", "Oggi"], ["organigramma", "Organigramma"], ["obiettivi", "Obiettivi"], ["settimana", "Settimana"]]} value={vistaHome} onChange={setVistaHome} style={{ display: "inline-flex", marginBottom: 16 }} />
       {vistaHome === "oggi" && <OggiGruppo ctx={ctx} aziende={attive} />}
+      {vistaHome === "organigramma" && <OrgGruppo ctx={ctx} aziende={attive} />}
       {vistaHome === "obiettivi" && <>
         <div style={{ fontSize: 13.5, color: C.grey, marginBottom: 12 }}>Tocca il numero sottolineato per aggiornarlo.</div>
         <ObiettiviNumerici ctx={ctx} lista={d.obiettivi.filter((o) => ids.has(o.azienda_id) && o.valore_obiettivo != null)} scrive={admin} mostraAzienda />
@@ -140,6 +141,88 @@ export function Home({ ctx }) {
         </div>
       </>}
       {nuova && <ModificaAzienda ctx={ctx} azienda={{ nome: "", descrizione: "", colore: "#4f7cac", stato: "attiva", ordine: d.aziende.length + 1 }} onClose={() => setNuova(false)} />}
+    </>
+  );
+}
+
+// Un unico diagramma con tutto il gruppo: in alto soci e CEO, sotto una colonna per ogni azienda con il suo albero
+function OrgGruppo({ ctx, aziende }) {
+  const { d } = ctx;
+  const [aperta, setAperta] = useState(null);
+  const L = C.line;
+  const dir = aziende.find((a) => /direzione/i.test(a.nome));
+  const persDir = dir ? d.persone.filter((p) => p.azienda_id === dir.id) : [];
+  const capo = persDir.find((p) => /ceo/i.test(p.ruolo)) || persDir.find((p) => !p.responsabile_id);
+  const cima = [];
+  for (let x = capo; x; x = persDir.find((p) => p.id === x.responsabile_id)) cima.unshift(x);
+  const colonne = [
+    ...(dir ? [{ a: dir, titolo: "Staff di direzione", pers: persDir.filter((p) => !cima.includes(p)) }] : []),
+    ...aziende.filter((x) => x !== dir).map((a) => ({ a, titolo: a.nome, pers: d.persone.filter((p) => p.azienda_id === a.id) })),
+  ];
+  const tutte = d.persone.filter((p) => aziende.some((a) => a.id === p.azienda_id));
+  const vuote = tutte.filter((p) => !p.nome).length;
+  const Box = ({ p, grande }) => (
+    <div onClick={() => setAperta(p)} style={{ display: "flex", alignItems: "center", gap: 8, background: p.nome ? C.card : "#fdf6f6", border: p.nome ? `1px solid ${L}` : `1.5px dashed ${C.red}`, borderRadius: 12, padding: grande ? "10px 14px" : "7px 9px", cursor: "pointer", minWidth: 0, width: grande ? 210 : "100%" }}>
+      <div style={{ width: grande ? 30 : 24, height: grande ? 30 : 24, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 11, background: p.nome ? C.slate : "#fff", color: p.nome ? "#fff" : C.red, border: p.nome ? "none" : `1.5px dashed ${C.red}` }}>{p.nome ? p.nome[0].toUpperCase() : "+"}</div>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: grande ? 14 : 12.5, fontWeight: 650, lineHeight: 1.2, color: p.nome ? C.text : C.red }}>{p.nome || "Da coprire"}</div>
+        <div style={{ fontSize: grande ? 12 : 11, color: C.slate, lineHeight: 1.25, marginTop: 1 }}>{p.ruolo}</div>
+      </div>
+    </div>
+  );
+  const Ramo = ({ p, pers }) => {
+    const sotto = pers.filter((x) => x.responsabile_id === p.id);
+    return (
+      <div>
+        <Box p={p} />
+        {sotto.length > 0 && (
+          <div style={{ marginLeft: 11, paddingLeft: 12, borderLeft: `2px solid ${L}`, display: "grid", gap: 6, paddingTop: 6 }}>
+            {sotto.map((f) => <div key={f.id} style={{ position: "relative" }}><div style={{ position: "absolute", left: -12, top: 18, width: 12, height: 2, background: L }} /><Ramo p={f} pers={pers} /></div>)}
+          </div>
+        )}
+      </div>
+    );
+  };
+  const Colonna = ({ c }) => {
+    const ids = new Set(c.pers.map((p) => p.id));
+    const radici = c.pers.filter((p) => !p.responsabile_id || !ids.has(p.responsabile_id));
+    const vu = c.pers.filter((p) => !p.nome).length;
+    return (
+      <div style={{ width: 194, flexShrink: 0 }}>
+        <div onClick={() => ctx.vai({ tipo: "azienda", id: c.a.id, tab: "organigramma" })} style={{ background: C.text, color: "#fff", borderRadius: 14, padding: "10px 12px", cursor: "pointer", marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 7 }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: c.a.colore }} /><b style={{ fontSize: 14.5 }}>{c.titolo}</b></div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,.6)", marginTop: 3 }}>{c.pers.length} ruoli · {vu} da coprire</div>
+        </div>
+        <div style={{ display: "grid", gap: 6 }}>{radici.map((p) => <Ramo key={p.id} p={p} pers={c.pers} />)}</div>
+      </div>
+    );
+  };
+  return (
+    <>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 12 }}>
+        <Tile label="Ruoli nel gruppo" value={tutte.length} />
+        <Tile label="Coperti" value={tutte.length - vuote} />
+        <Tile label="Da coprire" value={vuote} bg={vuote ? C.red : C.card} />
+      </div>
+      <div style={{ fontSize: 13, color: C.grey, marginBottom: 8 }}>Tocca un'azienda per aprirla, una persona per la sua scheda. Rosso tratteggiato = ruolo da coprire.{ctx.mobile ? " Scorri di lato per vedere tutte le aziende." : ""}</div>
+      <div style={{ background: C.card, borderRadius: 22, padding: 14, overflowX: "auto" }}>
+        <div style={{ width: "max-content", minWidth: "100%" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            {cima.map((p, i) => <React.Fragment key={p.id}>{i > 0 && <div style={{ width: 2, height: 14, background: L }} />}<Box p={p} grande /></React.Fragment>)}
+            <div style={{ width: 2, height: 16, background: L }} />
+          </div>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+            {colonne.map((c, i) => (
+              <div key={c.a.id} style={{ position: "relative", paddingTop: 16 }}>
+                <div style={{ position: "absolute", top: 0, height: 2, background: L, left: i === 0 ? "50%" : -6, right: i === colonne.length - 1 ? "50%" : -6 }} />
+                <div style={{ position: "absolute", top: 0, left: "50%", width: 2, height: 16, background: L }} />
+                <Colonna c={c} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      {aperta && <SchedaPersona ctx={ctx} azienda={d.aziende.find((a) => a.id === aperta.azienda_id)} scrive={ctx.puoScrivere(aperta.azienda_id)} p={aperta} onClose={() => setAperta(null)} />}
     </>
   );
 }

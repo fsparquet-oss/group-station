@@ -249,26 +249,48 @@ export function AlberoOrg({ pers, onApri, zoom = "adatta" }) {
   useLayoutEffect(() => { const b = box.current; if (b) b.scrollLeft = (b.scrollWidth - b.clientWidth) / 2; }, [scala, pers.length]);
   const ids = new Set(pers.map((p) => p.id));
   const figli = (id) => pers.filter((p) => id === null ? !p.responsabile_id || !ids.has(p.responsabile_id) : p.responsabile_id === id);
-  const Casella = ({ p }) => (
-    <div onClick={() => onApri(p)} style={{ width: 168, background: p.nome ? C.card : "#fdf6f6", border: p.nome ? `1px solid ${C.line}` : `1.5px dashed ${C.red}`, borderRadius: 16, padding: "10px 12px", cursor: "pointer", textAlign: "center", boxShadow: p.nome ? "0 2px 8px rgba(0,0,0,.04)" : "none" }}>
-      <div style={{ width: 34, height: 34, borderRadius: "50%", margin: "0 auto 6px", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 14, background: p.nome ? C.slate : "#fff", color: p.nome ? "#fff" : C.red, border: p.nome ? "none" : `1.5px dashed ${C.red}` }}>{p.nome ? p.nome[0].toUpperCase() : "+"}</div>
-      <div style={{ fontSize: 13.5, fontWeight: 650, lineHeight: 1.25 }}>{p.nome || "Da coprire"}</div>
-      <div style={{ fontSize: 11.5, color: C.slate, marginTop: 3, lineHeight: 1.3 }}>{p.ruolo}</div>
+  const Casella = ({ p }) => p.azienda ? (
+    <div onClick={() => onApri(p)} style={{ width: 160, background: C.text, color: "#fff", borderRadius: 16, padding: "12px 12px", cursor: "pointer", textAlign: "center" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: p.colore }} /><b style={{ fontSize: 14.5 }}>{p.nome}</b></div>
+      <div style={{ fontSize: 11, color: "rgba(255,255,255,.6)", marginTop: 4 }}>{p.ruolo}</div>
+    </div>
+  ) : (
+    <div onClick={() => onApri(p)} style={{ width: 160, background: p.nome ? C.card : "#fdf6f6", border: p.nome ? `1px solid ${C.line}` : `1.5px dashed ${C.red}`, borderRadius: 14, padding: "8px 10px", cursor: "pointer", textAlign: "left", display: "flex", gap: 8, alignItems: "center", boxShadow: p.nome ? "0 2px 8px rgba(0,0,0,.04)" : "none" }}>
+      <div style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 12, background: p.nome ? C.slate : "#fff", color: p.nome ? "#fff" : C.red, border: p.nome ? "none" : `1.5px dashed ${C.red}` }}>{p.nome ? p.nome[0].toUpperCase() : "+"}</div>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 12.5, fontWeight: 650, lineHeight: 1.2, color: p.nome ? C.text : C.red }}>{p.nome || "Da coprire"}</div>
+        <div style={{ fontSize: 11, color: C.slate, marginTop: 2, lineHeight: 1.25 }}>{p.ruolo}</div>
+      </div>
+    </div>
+  );
+  const V = (h = 16) => <div style={{ width: 2, height: h, background: LINEA, flexShrink: 0 }} />;
+  // Le persone senza nessuno sotto stanno in colonna, così il diagramma resta stretto e si vede tutto
+  const Colonna = ({ lista }) => (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", position: "relative", paddingLeft: 14 }}>
+      <div style={{ position: "absolute", left: 0, top: 0, bottom: 20, width: 2, background: LINEA }} />
+      {lista.map((f, i) => (
+        <div key={f.id} style={{ display: "flex", alignItems: "center", marginTop: i ? 8 : 0, position: "relative" }}>
+          <div style={{ position: "absolute", left: -14, width: 14, height: 2, background: LINEA }} />
+          <Casella p={f} />
+        </div>
+      ))}
     </div>
   );
   const Nodo = ({ p }) => {
     const sotto = figli(p.id);
+    const foglie = sotto.filter((f) => figli(f.id).length === 0), rami = sotto.filter((f) => figli(f.id).length > 0);
+    const gruppi = [...rami.map((f) => ({ k: f.id, nodo: f })), ...(foglie.length === 1 ? [{ k: "f" + foglie[0].id, nodo: foglie[0] }] : foglie.length ? [{ k: "col" + p.id, colonna: foglie }] : [])];
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         <Casella p={p} />
-        {sotto.length > 0 && <>
-          <div style={{ width: 2, height: 18, background: LINEA }} />
-          <div style={{ display: "flex" }}>
-            {sotto.map((f, i) => (
-              <div key={f.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", position: "relative", padding: "0 7px" }}>
-                {sotto.length > 1 && <div style={{ position: "absolute", top: 0, height: 2, background: LINEA, left: i === 0 ? "50%" : 0, right: i === sotto.length - 1 ? "50%" : 0 }} />}
-                <div style={{ width: 2, height: 18, background: LINEA }} />
-                <Nodo p={f} />
+        {gruppi.length > 0 && <>
+          {V()}
+          <div style={{ display: "flex", alignItems: "flex-start" }}>
+            {gruppi.map((g, i) => (
+              <div key={g.k} style={{ display: "flex", flexDirection: "column", alignItems: "center", position: "relative", padding: "0 6px" }}>
+                {gruppi.length > 1 && <div style={{ position: "absolute", top: 0, height: 2, background: LINEA, left: i === 0 ? "50%" : 0, right: i === gruppi.length - 1 ? "50%" : 0 }} />}
+                {V()}
+                {g.colonna ? <Colonna lista={g.colonna} /> : <Nodo p={g.nodo} />}
               </div>
             ))}
           </div>
