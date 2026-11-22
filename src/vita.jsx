@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { supabase } from "./supabase";
 import { salva, elimina } from "./db";
-import { C, Btn, Card, Field, Modal, Dot, Vuoto, Label, Anello, vetro, euro, num, data, giorniA } from "./ui";
+import { C, Btn, Card, Field, Modal, Dot, Vuoto, Label, Anello, Segment, vetro, euro, num, data, giorniA } from "./ui";
 import { SceltaGiorno } from "./oggi";
+import { AnalisiSoldi, BachecaSpunti, SpeseFisse } from "./soldi";
 
 // La mia vita: abitudini di ogni giorno, buste di risparmio e obiettivi personali. Visibile solo a Fabio.
 const AREE = ["Vita con Dio", "Famiglia", "Crescita", "Corpo", "Vlog", "Viaggi", "Casa", "Auto", "Soldi", "Altro"];
@@ -20,6 +21,7 @@ export function PaginaVita({ ctx }) {
   const messo = buste.reduce((s, o) => s + Number(o.valore_attuale || 0), 0);
   const traguardo = buste.reduce((s, o) => s + Number(o.valore_obiettivo || 0), 0);
   const [modAb, setModAb] = useState(false);
+  const [tab, setTab] = useState("oggi");
   const [modOb, setModOb] = useState(null);
   const [versa, setVersa] = useState(null);
   const [numEdit, setNumEdit] = useState(null);
@@ -71,8 +73,11 @@ export function PaginaVita({ ctx }) {
         </div>
       </div>
 
+      <Segment items={[["oggi", "Abitudini"], ["soldi", "Soldi e buste"], ["fisse", "Spese fisse"], ["obiettivi", "Obiettivi di vita"]]} value={tab} onChange={setTab} style={{ display: "inline-flex", margin: "22px 0 4px" }} />
+
+      {tab === "oggi" && <>
       {/* Abitudini del giorno, divise per area */}
-      <div style={{ fontSize: 18, fontWeight: 600, margin: "26px 2px 12px" }}>Abitudini di {giorniA(giorno) === 0 ? "oggi" : data(giorno)}</div>
+      <div style={{ fontSize: 18, fontWeight: 600, margin: "18px 2px 12px" }}>Abitudini di {giorniA(giorno) === 0 ? "oggi" : data(giorno)}</div>
       <div style={{ display: "grid", gridTemplateColumns: ctx.mobile ? "1fr" : "repeat(3, 1fr)", gap: 12, alignItems: "start" }}>
         {perArea.map((area) => (
           <Card key={area} style={{ padding: 16 }}>
@@ -99,14 +104,26 @@ export function PaginaVita({ ctx }) {
         {perArea.length === 0 && <Card><Vuoto>Nessuna abitudine. Premi "Modifica abitudini".</Vuoto></Card>}
       </div>
 
+      </>}
+
+      {tab === "soldi" && <>
+      <div style={{ height: 14 }} />
+      <AnalisiSoldi ctx={ctx} buste={buste} />
+      <div style={{ height: 16 }} />
+      <BachecaSpunti />
       {/* Buste di risparmio */}
-      <div style={{ fontSize: 18, fontWeight: 600, margin: "26px 2px 12px" }}>Buste di risparmio</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "26px 2px 12px" }}><div style={{ fontSize: 18, fontWeight: 600 }}>Buste di risparmio</div><Btn small variant="ghost" onClick={() => setModOb({ tipo: "soldi", area: "Casa", unita: "€", valore_attuale: 0 })}>+ Busta</Btn></div>
       <div style={{ display: "grid", gridTemplateColumns: ctx.mobile ? "1fr" : "repeat(3, 1fr)", gap: 14 }}>
         {buste.map((o) => <SchedaObiettivo key={o.id} o={o} onApri={() => setModOb(o)} onVersa={() => setVersa(o)} />)}
       </div>
 
-      {altri.length > 0 && <>
-        <div style={{ fontSize: 18, fontWeight: 600, margin: "26px 2px 12px" }}>Obiettivi di vita</div>
+      </>}
+
+      {tab === "fisse" && <><div style={{ height: 14 }} /><SpeseFisse ctx={ctx} /></>}
+
+      {tab === "obiettivi" && <>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "18px 2px 12px" }}><div style={{ fontSize: 18, fontWeight: 600 }}>Obiettivi di vita</div><Btn small variant="ghost" onClick={() => setModOb({ tipo: "vita", area: "Crescita", unita: "", valore_attuale: 0 })}>+ Obiettivo</Btn></div>
+        {altri.length === 0 && <Card><Vuoto>Es. leggere 24 libri, 100 episodi del vlog, diploma.</Vuoto></Card>}
         <div style={{ display: "grid", gridTemplateColumns: ctx.mobile ? "1fr" : "repeat(3, 1fr)", gap: 14 }}>
           {altri.map((o) => <SchedaObiettivo key={o.id} o={o} onApri={() => setModOb(o)} onVersa={() => setVersa(o)} />)}
         </div>
@@ -123,7 +140,7 @@ function SchedaObiettivo({ o, onApri, onVersa }) {
   const p = pct(o), fatto = p >= 100, giorni = o.scadenza ? giorniA(o.scadenza) : null;
   const scuro = !fatto, fg = scuro ? "#fff" : C.text, sub = scuro ? "rgba(255,255,255,.6)" : C.grey;
   const manca = o.valore_obiettivo ? Math.max(0, Number(o.valore_obiettivo) - Number(o.valore_attuale || 0)) : null;
-  const mesi = giorni != null && giorni > 0 ? Math.max(1, Math.round(giorni / 30)) : null;
+  const mesi = giorni != null && giorni > 0 ? Math.max(1, giorni / 30.44) : null;
   return (
     <div style={{ background: scuro ? C.dark : C.card, color: fg, borderRadius: 22, padding: 18, display: "flex", flexDirection: "column", minHeight: 170 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
