@@ -6,7 +6,7 @@ import { Dashboard, PaginaOggi, PaginaObiettivi, PaginaOrg, PaginaScadenze } fro
 import { PaginaVita } from "./vita";
 export { salva, elimina } from "./db";
 
-const TABELLE = ["gs_aziende", "gs_kpi", "gs_kpi_valori", "gs_persone", "gs_obiettivi", "gs_scadenze", "gs_attrezzature", "gs_procedure", "gs_documenti", "gs_onboarding", "gs_accessi", "gs_controlli", "gs_controlli_valori", "gs_vita_persone", "gs_vita_abitudini", "gs_vita_valori", "gs_vita_obiettivi", "gs_vita_fisse"];
+const TABELLE = ["gs_aziende", "gs_kpi", "gs_kpi_valori", "gs_persone", "gs_obiettivi", "gs_scadenze", "gs_attrezzature", "gs_procedure", "gs_documenti", "gs_onboarding", "gs_accessi", "gs_controlli", "gs_controlli_valori", "gs_vita_persone", "gs_vita_abitudini", "gs_vita_valori", "gs_vita_obiettivi", "gs_vita_fisse", "gs_vita_piani", "gs_vita_letture"];
 const ORDINE = { gs_aziende: "ordine", gs_kpi: "ordine", gs_persone: "ordine", gs_onboarding: "ordine", gs_controlli: "ordine", gs_vita_abitudini: "ordine", gs_vita_obiettivi: "ordine", gs_vita_fisse: "ordine" };
 
 function useDati(attivo) {

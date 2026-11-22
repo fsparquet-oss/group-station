@@ -4,6 +4,7 @@ import { salva, elimina } from "./db";
 import { C, Btn, Card, Field, Modal, Dot, Vuoto, Label, Anello, Segment, vetro, euro, num, data, giorniA } from "./ui";
 import { SceltaGiorno } from "./oggi";
 import { AnalisiSoldi, BachecaSpunti, SpeseFisse } from "./soldi";
+import { PianoBibbia } from "./bibbia";
 
 // La mia vita: abitudini di ogni giorno, buste di risparmio e obiettivi personali. Visibile solo a Fabio.
 const AREE = ["Vita con Dio", "Famiglia", "Crescita", "Corpo", "Vlog", "Viaggi", "Casa", "Auto", "Soldi", "Altro"];
@@ -73,7 +74,7 @@ export function PaginaVita({ ctx }) {
         </div>
       </div>
 
-      <Segment items={[["oggi", "Abitudini"], ["soldi", "Soldi e buste"], ["fisse", "Spese fisse"], ["obiettivi", "Obiettivi di vita"]]} value={tab} onChange={setTab} style={{ display: "inline-flex", margin: "22px 0 4px" }} />
+      <Segment items={[["oggi", "Abitudini"], ["bibbia", "Bibbia in un anno"], ["soldi", "Soldi e buste"], ["fisse", "Spese fisse"], ["obiettivi", "Obiettivi di vita"]]} value={tab} onChange={setTab} style={{ display: "inline-flex", margin: "22px 0 4px" }} />
 
       {tab === "oggi" && <>
       {/* Abitudini del giorno, divise per area */}
@@ -118,6 +119,8 @@ export function PaginaVita({ ctx }) {
       </div>
 
       </>}
+
+      {tab === "bibbia" && <PianoBibbia ctx={ctx} />}
 
       {tab === "fisse" && <><div style={{ height: 14 }} /><SpeseFisse ctx={ctx} /></>}
 
