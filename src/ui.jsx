@@ -59,7 +59,7 @@ export function Tile({ label, n, value, color, bg = C.card, onClick, style, smal
   return (
     <div onClick={onClick} style={{ background: bg, borderRadius: 20, padding: small ? "12px 14px" : "16px 18px", cursor: onClick ? "pointer" : "default", minWidth: 0, ...style }}>
       <Label n={n} color={bg === C.red || bg === C.text ? "rgba(255,255,255,.75)" : C.grey}>{label}</Label>
-      <div style={{ fontSize: small ? 20 : 30, fontWeight: 650, letterSpacing: -0.8, marginTop: small ? 6 : 10, color: color || (bg === C.red || bg === C.text ? "#fff" : C.text), whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</div>
+      <div style={{ fontSize: small ? 22 : 38, fontWeight: 250, letterSpacing: -1, marginTop: small ? 4 : 6, color: color || (bg === C.red || bg === C.text ? "#fff" : C.text), whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</div>
     </div>
   );
 }

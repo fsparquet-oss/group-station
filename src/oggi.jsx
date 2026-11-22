@@ -172,7 +172,7 @@ export function OggiGruppo({ ctx, aziende }) {
       <SceltaGiorno ctx={ctx} />
       <div style={{ ...sfondo, borderRadius: 24, padding: "20px 22px", color: "#fff", marginTop: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}><Dot color={C.red} size={9} /><Label color="rgba(255,255,255,.7)">Controlli fatti {giorniA(giorno) === 0 ? "oggi" : "il " + data(giorno)}</Label></div>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 10 }}><span style={{ fontSize: 44, fontWeight: 650, letterSpacing: -1.5 }}>{fatti}/{totale}</span><span style={{ fontSize: 16, color: "rgba(255,255,255,.6)" }}>{pct}%</span></div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 10 }}><span style={{ fontSize: 52, fontWeight: 200, letterSpacing: -1.5 }}>{fatti}/{totale}</span><span style={{ fontSize: 16, color: "rgba(255,255,255,.6)" }}>{pct}%</span></div>
         <div style={{ height: 6, background: "rgba(255,255,255,.15)", borderRadius: 9, marginTop: 12, overflow: "hidden" }}><div style={{ width: pct + "%", height: "100%", background: pct === 100 ? "#4fbf7f" : C.red, borderRadius: 9 }} /></div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: ctx.mobile ? "1fr" : "1fr 1fr", gap: 12, marginTop: 12, alignItems: "start" }}>

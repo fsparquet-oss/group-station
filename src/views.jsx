@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { supabase } from "./supabase";
 import { salva, elimina } from "./db";
 import { OggiGruppo, ControlliAzienda, SceltaGiorno, ObiettiviNumerici, AlberoOrg } from "./oggi";
+import { OrgPillole, PercorsoObiettivi } from "./infografica";
 import { C, Btn, Card, Field, Modal, Chip, Dot, Vuoto, griglia, Label, Tile, Segment, Fab, euro, num, data, oggi, giorniA, settimanaScorsa, spostaSettimana, nomeSettimana, esitoKpi, coloreEsito, etichetta } from "./ui";
 
 const COEFF_COSTO = 1.95; // costo azienda stimato = netto × 1,95 (da verificare col consulente del lavoro)
@@ -87,17 +88,22 @@ export function Home({ ctx }) {
       </div>
       <Segment items={[["oggi", "Oggi"], ["organigramma", "Organigramma"], ["obiettivi", "Obiettivi"], ["settimana", "Settimana"]]} value={vistaHome} onChange={setVistaHome} style={{ display: "inline-flex", marginBottom: 16 }} />
       {vistaHome === "oggi" && <OggiGruppo ctx={ctx} aziende={attive} />}
-      {vistaHome === "organigramma" && <OrgGruppo ctx={ctx} aziende={attive} />}
+      {vistaHome === "organigramma" && <OrgPerAzienda ctx={ctx} aziende={attive} />}
       {vistaHome === "obiettivi" && <>
         <div style={{ fontSize: 13.5, color: C.grey, marginBottom: 12 }}>Tocca il numero sottolineato per aggiornarlo.</div>
-        <ObiettiviNumerici ctx={ctx} lista={d.obiettivi.filter((o) => ids.has(o.azienda_id) && o.valore_obiettivo != null)} scrive={admin} mostraAzienda />
+        {attive.filter((a) => d.obiettivi.some((o) => o.azienda_id === a.id && o.valore_obiettivo != null)).map((a) => (
+          <div key={a.id} style={{ marginBottom: 18 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 9, margin: "0 0 10px 4px" }}><Dot color={a.colore} size={11} /><b style={{ fontSize: 19, fontWeight: 600 }}>{a.nome}</b></div>
+            <PercorsoObiettivi ctx={ctx} lista={d.obiettivi.filter((o) => o.azienda_id === a.id && o.valore_obiettivo != null)} scrive={ctx.puoScrivere(a.id)} />
+          </div>
+        ))}
       </>}
       {vistaHome === "settimana" && <>
       <SceltaSettimana ctx={ctx} />
 
       <div style={{ ...sfondoPunti, borderRadius: 24, padding: "20px 22px", color: "#fff", marginTop: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}><Dot color={C.red} size={9} /><Label n={1} color="rgba(255,255,255,.7)">Fatturato settimana</Label></div>
-        <div style={{ fontSize: 44, fontWeight: 650, letterSpacing: -1.5, marginTop: 10 }}>{fatturato == null ? "—" : euro(fatturato)}</div>
+        <div style={{ fontSize: 52, fontWeight: 200, letterSpacing: -1.5, marginTop: 10 }}>{fatturato == null ? "—" : euro(fatturato)}</div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginTop: 10 }}>
         <Tile n={2} label="Ore di Fabio" value={ore == null ? "—" : `${num(ore)} h`} />
@@ -141,6 +147,34 @@ export function Home({ ctx }) {
         </div>
       </>}
       {nuova && <ModificaAzienda ctx={ctx} azienda={{ nome: "", descrizione: "", colore: "#4f7cac", stato: "attiva", ordine: d.aziende.length + 1 }} onClose={() => setNuova(false)} />}
+    </>
+  );
+}
+
+// Organigramma diviso per azienda: scegli l'azienda e vedi il suo diagramma a pillole
+function OrgPerAzienda({ ctx, aziende }) {
+  const { d } = ctx;
+  const prima = aziende.find((a) => !/direzione/i.test(a.nome)) || aziende[0];
+  const [scelta, setScelta] = useState(prima ? prima.id : "gruppo");
+  const [aperta, setAperta] = useState(null);
+  const az = aziende.find((a) => a.id === scelta);
+  const pers = az ? d.persone.filter((p) => p.azienda_id === az.id) : [];
+  const vuote = pers.filter((p) => !p.nome).length;
+  return (
+    <>
+      <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 14 }}>
+        {aziende.map((a) => <button key={a.id} onClick={() => setScelta(a.id)} style={{ border: "none", borderRadius: 999, padding: "9px 15px", fontSize: 14, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 8, background: scelta === a.id ? C.text : C.card, color: scelta === a.id ? "#fff" : C.text }}><Dot color={a.colore} size={9} />{a.nome}</button>)}
+        <button onClick={() => setScelta("gruppo")} style={{ border: "none", borderRadius: 999, padding: "9px 15px", fontSize: 14, whiteSpace: "nowrap", background: scelta === "gruppo" ? C.text : C.card, color: scelta === "gruppo" ? "#fff" : C.slate }}>Tutto il gruppo</button>
+      </div>
+      {scelta === "gruppo" || !az ? <OrgGruppo ctx={ctx} aziende={aziende} /> : <>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 12 }}>
+          <Tile n={1} label="Ruoli" value={pers.length} />
+          <Tile n={2} label="Coperti" value={pers.length - vuote} />
+          <Tile n={3} label="Da coprire" value={vuote} bg={vuote ? C.red : C.card} />
+        </div>
+        <OrgPillole pers={pers} colore={az.colore === "#111619" ? C.slate : az.colore} onApri={setAperta} />
+        {aperta && <SchedaPersona ctx={ctx} azienda={az} scrive={ctx.puoScrivere(az.id)} p={aperta} onClose={() => setAperta(null)} />}
+      </>}
     </>
   );
 }
@@ -475,7 +509,7 @@ function Organigramma({ ctx, azienda, scrive }) {
           <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", marginBottom: 8 }}>
             {[["adatta", "Tutto"], [0.75, "75%"], [1, "100%"]].map(([z, l]) => <Btn key={z} small variant={zoom === z ? "dark" : "ghost"} onClick={() => setZoom(z)}>{l}</Btn>)}
           </div>
-          <AlberoOrg pers={pers} onApri={setAperta} zoom={zoom} />
+          <OrgPillole pers={pers} colore={azienda.colore === "#111619" ? C.slate : azienda.colore} onApri={setAperta} zoom={zoom} />
         </>
       )}
       {scrive && <Fab onClick={() => setAperta({ azienda_id: azienda.id, ruolo: "", responsabile_id: null })}>+ Ruolo</Fab>}
@@ -753,7 +787,7 @@ function Obiettivi({ ctx, azienda, scrive }) {
       </div>
       {ob.some((o) => o.valore_obiettivo != null) && <>
         <Label style={{ marginBottom: 10 }}>Obiettivi a numero · tocca il numero per aggiornarlo</Label>
-        <ObiettiviNumerici ctx={ctx} lista={ob.filter((o) => o.valore_obiettivo != null)} scrive={scrive} onApri={setMod} />
+        <PercorsoObiettivi ctx={ctx} lista={ob.filter((o) => o.valore_obiettivo != null)} scrive={scrive} onApri={setMod} />
         <Label style={{ margin: "22px 0 10px" }}>Da fare</Label>
       </>}
       <Card style={{ padding: "4px 18px" }}>
