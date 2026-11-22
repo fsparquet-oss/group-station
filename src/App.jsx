@@ -3,10 +3,11 @@ import { supabase } from "./supabase";
 import { C, Logo, Btn, Card, Field, Vuoto, settimanaScorsa, oggi, vetro } from "./ui";
 import { Azienda, Accessi, scadenzeVicine } from "./views";
 import { Dashboard, PaginaOggi, PaginaObiettivi, PaginaOrg, PaginaScadenze } from "./dashboard";
+import { PaginaVita } from "./vita";
 export { salva, elimina } from "./db";
 
-const TABELLE = ["gs_aziende", "gs_kpi", "gs_kpi_valori", "gs_persone", "gs_obiettivi", "gs_scadenze", "gs_attrezzature", "gs_procedure", "gs_documenti", "gs_onboarding", "gs_accessi", "gs_controlli", "gs_controlli_valori"];
-const ORDINE = { gs_aziende: "ordine", gs_kpi: "ordine", gs_persone: "ordine", gs_onboarding: "ordine", gs_controlli: "ordine" };
+const TABELLE = ["gs_aziende", "gs_kpi", "gs_kpi_valori", "gs_persone", "gs_obiettivi", "gs_scadenze", "gs_attrezzature", "gs_procedure", "gs_documenti", "gs_onboarding", "gs_accessi", "gs_controlli", "gs_controlli_valori", "gs_vita_persone", "gs_vita_abitudini", "gs_vita_valori", "gs_vita_obiettivi"];
+const ORDINE = { gs_aziende: "ordine", gs_kpi: "ordine", gs_persone: "ordine", gs_onboarding: "ordine", gs_controlli: "ordine", gs_vita_abitudini: "ordine", gs_vita_obiettivi: "ordine" };
 
 function useDati(attivo) {
   const [d, setD] = useState(null);
@@ -14,6 +15,8 @@ function useDati(attivo) {
     const res = await Promise.all(TABELLE.map((t) => {
       let q = supabase.from(t).select("*");
       q = ORDINE[t] ? q.order(ORDINE[t]).order("id") : q.order("id");
+      if (t === "gs_vita_valori") q = supabase.from(t).select("*").gte("giorno", new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10));
+      if (t === "gs_vita_persone") q = supabase.from(t).select("*");
       if (t === "gs_controlli_valori") q = supabase.from(t).select("*").gte("giorno", new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10));
       if (t === "gs_kpi_valori") q = supabase.from(t).select("*").gte("settimana", new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10)).order("settimana");
       return q;
@@ -100,12 +103,14 @@ export default function App() {
   const nome = (sessione.user.user_metadata?.full_name || sessione.user.user_metadata?.name || email.split("@")[0]).split(" ")[0];
   const nomeBello = nome.charAt(0).toUpperCase() + nome.slice(1);
   const scadVicine = scadenzeVicine(d);
+  const haVita = (d.vita_persone || []).some((x) => x.email.toLowerCase() === email);
   const icone = {
     home: <path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z" />,
     oggi: <><rect x="4" y="5" width="16" height="15" rx="2.5" /><path d="M8 3v4M16 3v4M4 10h16" /></>,
     obiettivi: <><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="4" /><circle cx="12" cy="12" r="1" /></>,
     organigramma: <><rect x="9" y="3" width="6" height="5" rx="1.5" /><rect x="3" y="16" width="6" height="5" rx="1.5" /><rect x="15" y="16" width="6" height="5" rx="1.5" /><path d="M12 8v4M6 16v-4h12v4" /></>,
     scadenze: <><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8" /><path d="M10 20a2 2 0 0 0 4 0" /></>,
+    vita: <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />,
     accessi: <><circle cx="9" cy="8" r="3.5" /><path d="M3 20c.5-3.5 3-5.5 6-5.5s5.5 2 6 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5c1.7.6 2.8 2.4 3 5.5" /></>,
   };
   const Icona = ({ k, size = 17 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{icone[k]}</svg>;
@@ -122,6 +127,7 @@ export default function App() {
       {voci.map(([k, l]) => vocePill(vista.tipo === k || (k === "home" && vista.tipo === "home"), () => vai({ tipo: k }), <><Icona k={k} />{l}</>, k))}
       {titoloSez("Aziende")}
       {visibili.map((a) => vocePill(azienda?.id === a.id, () => vai({ tipo: "azienda", id: a.id, tab: "oggi" }), <><span style={{ width: 9, height: 9, borderRadius: "50%", background: a.stato === "in pausa" ? C.line : a.colore, marginLeft: 4, marginRight: 4 }} /><span style={{ color: azienda?.id === a.id ? "#fff" : a.stato === "in pausa" ? C.grey : C.text }}>{a.nome}</span></>, "a" + a.id))}
+      {haVita && <>{titoloSez("Personale")}{vocePill(vista.tipo === "vita", () => vai({ tipo: "vita" }), <><Icona k="vita" />La mia vita</>, "vita")}</>}
       {admin && <>{titoloSez("Gestione")}{vocePill(vista.tipo === "accessi", () => vai({ tipo: "accessi" }), <><Icona k="accessi" />Accessi</>, "acc")}</>}
       <div style={{ flex: 1, minHeight: 20 }} />
       <button onClick={esci} style={{ display: "flex", alignItems: "center", gap: 11, border: "none", background: "none", padding: "9px 12px", fontSize: 13.5, color: C.slate }}>
@@ -139,7 +145,7 @@ export default function App() {
         <main style={{ flex: 1, minWidth: 0, padding: mobile ? "14px 14px 110px" : "6px 4px 60px" }}>
           <header style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
             {mobile && <button onClick={() => setMenu(true)} style={tondo}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h10" /></svg></button>}
-            <div style={{ fontSize: mobile ? 22 : 28, fontWeight: 650, letterSpacing: -0.6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{azienda ? azienda.nome : `Ciao ${nomeBello}!`}</div>
+            <div style={{ fontSize: mobile ? 22 : 28, fontWeight: 650, letterSpacing: -0.6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{azienda ? azienda.nome : vista.tipo === "vita" ? "La mia vita" : `Ciao ${nomeBello}!`}</div>
             <div style={{ flex: 1 }} />
             {admin && !mobile && <button onClick={() => vai({ tipo: "obiettivi", nuovo: Date.now() })} style={{ border: "none", borderRadius: 999, background: C.text, color: "#fff", fontSize: 13.5, fontWeight: 500, padding: "11px 18px", display: "flex", alignItems: "center", gap: 7 }}>+ Nuovo obiettivo</button>}
             <button title="Scadenze vicine" onClick={() => vai({ tipo: "scadenze" })} style={tondo}><Icona k="scadenze" size={18} />{scadVicine > 0 && <span style={{ position: "absolute", top: 8, right: 9, width: 8, height: 8, borderRadius: "50%", background: C.red, border: "2px solid #fff" }} />}</button>
@@ -153,6 +159,7 @@ export default function App() {
             : vista.tipo === "obiettivi" ? <PaginaObiettivi ctx={ctx} />
             : vista.tipo === "organigramma" ? <PaginaOrg ctx={ctx} />
             : vista.tipo === "scadenze" ? <PaginaScadenze ctx={ctx} />
+            : vista.tipo === "vita" && haVita ? <PaginaVita ctx={ctx} />
             : <Dashboard ctx={ctx} />}
         </main>
       </div>
