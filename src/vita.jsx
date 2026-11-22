@@ -5,9 +5,10 @@ import { C, Btn, Card, Field, Modal, Dot, Vuoto, Label, Anello, Segment, vetro, 
 import { SceltaGiorno } from "./oggi";
 import { AnalisiSoldi, BachecaSpunti, SpeseFisse } from "./soldi";
 import { PianoBibbia } from "./bibbia";
+import { Rituale, PassoScomodo } from "./rituale";
 
 // La mia vita: abitudini di ogni giorno, buste di risparmio e obiettivi personali. Visibile solo a Fabio.
-const AREE = ["Vita con Dio", "Famiglia", "Crescita", "Corpo", "Vlog", "Viaggi", "Casa", "Auto", "Soldi", "Altro"];
+const AREE = ["Vita con Dio", "Famiglia", "Crescita", "Lavoro", "America", "Studio", "Corpo", "Vlog", "Viaggi", "Casa", "Auto", "Soldi", "Altro"];
 const fmtV = (v, u) => v == null ? "—" : u === "€" ? euro(v) : `${Number(v).toLocaleString("it-IT", { maximumFractionDigits: 1, useGrouping: "always" })}${u ? " " + u : ""}`;
 const pct = (o) => o.valore_obiettivo ? Math.min(100, (Number(o.valore_attuale || 0) / Number(o.valore_obiettivo)) * 100) : 0;
 
@@ -74,9 +75,10 @@ export function PaginaVita({ ctx }) {
         </div>
       </div>
 
-      <Segment items={[["oggi", "Abitudini"], ["bibbia", "Bibbia in un anno"], ["soldi", "Soldi e buste"], ["fisse", "Spese fisse"], ["obiettivi", "Obiettivi di vita"]]} value={tab} onChange={setTab} style={{ display: "inline-flex", margin: "22px 0 4px" }} />
+      <Segment items={[["oggi", "Abitudini"], ["bibbia", "Bibbia in un anno"], ["soldi", "Soldi e buste"], ["fisse", "Spese fisse"], ["obiettivi", "Tutti gli obiettivi"]]} value={tab} onChange={setTab} style={{ display: "inline-flex", margin: "22px 0 4px" }} />
 
       {tab === "oggi" && <>
+      <PassoScomodo ctx={ctx} />
       {/* Abitudini del giorno, divise per area */}
       <div style={{ fontSize: 18, fontWeight: 600, margin: "18px 2px 12px" }}>Abitudini di {giorniA(giorno) === 0 ? "oggi" : data(giorno)}</div>
       <div style={{ display: "grid", gridTemplateColumns: ctx.mobile ? "1fr" : "repeat(3, 1fr)", gap: 12, alignItems: "start" }}>
@@ -104,6 +106,7 @@ export function PaginaVita({ ctx }) {
         ))}
         {perArea.length === 0 && <Card><Vuoto>Nessuna abitudine. Premi "Modifica abitudini".</Vuoto></Card>}
       </div>
+      <Rituale ctx={ctx} abitudini={abitudini} />
 
       </>}
 
@@ -125,11 +128,19 @@ export function PaginaVita({ ctx }) {
       {tab === "fisse" && <><div style={{ height: 14 }} /><SpeseFisse ctx={ctx} /></>}
 
       {tab === "obiettivi" && <>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "18px 2px 12px" }}><div style={{ fontSize: 18, fontWeight: 600 }}>Obiettivi di vita</div><Btn small variant="ghost" onClick={() => setModOb({ tipo: "vita", area: "Crescita", unita: "", valore_attuale: 0 })}>+ Obiettivo</Btn></div>
-        {altri.length === 0 && <Card><Vuoto>Es. leggere 24 libri, 100 episodi del vlog, diploma.</Vuoto></Card>}
-        <div style={{ display: "grid", gridTemplateColumns: ctx.mobile ? "1fr" : "repeat(3, 1fr)", gap: 14 }}>
-          {altri.map((o) => <SchedaObiettivo key={o.id} o={o} onApri={() => setModOb(o)} onVersa={() => setVersa(o)} />)}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "18px 2px 4px", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ fontSize: 18, fontWeight: 600 }}>Tutti i miei obiettivi</div>
+          <div style={{ display: "flex", gap: 8 }}><Btn small variant="ghost" onClick={() => setModOb({ tipo: "vita", area: "Crescita", unita: "", valore_attuale: 0 })}>+ Obiettivo</Btn><Btn small variant="ghost" onClick={() => setModOb({ tipo: "soldi", area: "Casa", unita: "€", valore_attuale: 0 })}>+ Busta</Btn></div>
         </div>
+        <div style={{ fontSize: 13, color: C.grey, margin: "0 2px 6px" }}>In ordine di scadenza. Ogni giorno il passo scomodo ti avvicina a uno di questi.</div>
+        {gruppiAnno(d.vita_obiettivi).map(([titolo, lista]) => (
+          <div key={titolo}>
+            <Label style={{ margin: "20px 2px 10px" }}>{titolo}</Label>
+            <div style={{ display: "grid", gridTemplateColumns: ctx.mobile ? "1fr" : "repeat(3, 1fr)", gap: 14 }}>
+              {lista.map((o) => <SchedaObiettivo key={o.id} o={o} onApri={() => setModOb(o)} onVersa={() => setVersa(o)} />)}
+            </div>
+          </div>
+        ))}
       </>}
 
       {modAb && <GestisciAbitudini ctx={ctx} onClose={() => setModAb(false)} />}
@@ -137,6 +148,20 @@ export function PaginaVita({ ctx }) {
       {versa && <Versa ctx={ctx} o={versa} onClose={() => setVersa(null)} />}
     </>
   );
+}
+
+// Obiettivi divisi per anno di scadenza (quelli raggiunti in fondo)
+function gruppiAnno(lista) {
+  const fatto = (o) => o.valore_obiettivo && Number(o.valore_attuale || 0) >= Number(o.valore_obiettivo);
+  const ord = [...lista].sort((a, b) => (a.scadenza || "9999").localeCompare(b.scadenza || "9999") || (a.ordine ?? 0) - (b.ordine ?? 0));
+  const g = new Map();
+  const anno = new Date().getFullYear();
+  ord.forEach((o) => {
+    const k = fatto(o) ? "Raggiunti 🎉" : !o.scadenza ? "Senza data" : Number(o.scadenza.slice(0, 4)) <= anno ? `Entro fine ${anno}` : `Nel ${o.scadenza.slice(0, 4)}`;
+    if (!g.has(k)) g.set(k, []); g.get(k).push(o);
+  });
+  const chiavi = [...g.keys()].sort((a, b) => { const p = (k) => k.startsWith("Entro") ? 0 : k.startsWith("Nel") ? 1 : k === "Senza data" ? 2 : 3; return p(a) - p(b) || a.localeCompare(b); });
+  return chiavi.map((k) => [k, g.get(k)]);
 }
 
 function SchedaObiettivo({ o, onApri, onVersa }) {

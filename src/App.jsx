@@ -6,7 +6,7 @@ import { Dashboard, PaginaOggi, PaginaObiettivi, PaginaOrg, PaginaScadenze } fro
 import { PaginaVita } from "./vita";
 export { salva, elimina } from "./db";
 
-const TABELLE = ["gs_aziende", "gs_kpi", "gs_kpi_valori", "gs_persone", "gs_obiettivi", "gs_scadenze", "gs_attrezzature", "gs_procedure", "gs_documenti", "gs_onboarding", "gs_accessi", "gs_controlli", "gs_controlli_valori", "gs_vita_persone", "gs_vita_abitudini", "gs_vita_valori", "gs_vita_obiettivi", "gs_vita_fisse", "gs_vita_piani", "gs_vita_letture"];
+const TABELLE = ["gs_aziende", "gs_kpi", "gs_kpi_valori", "gs_persone", "gs_obiettivi", "gs_scadenze", "gs_attrezzature", "gs_procedure", "gs_documenti", "gs_onboarding", "gs_accessi", "gs_controlli", "gs_controlli_valori", "gs_vita_persone", "gs_vita_abitudini", "gs_vita_valori", "gs_vita_obiettivi", "gs_vita_fisse", "gs_vita_piani", "gs_vita_letture", "gs_vita_passi"];
 const ORDINE = { gs_aziende: "ordine", gs_kpi: "ordine", gs_persone: "ordine", gs_onboarding: "ordine", gs_controlli: "ordine", gs_vita_abitudini: "ordine", gs_vita_obiettivi: "ordine", gs_vita_fisse: "ordine" };
 
 function useDati(attivo) {
@@ -15,7 +15,7 @@ function useDati(attivo) {
     const res = await Promise.all(TABELLE.map((t) => {
       let q = supabase.from(t).select("*");
       q = ORDINE[t] ? q.order(ORDINE[t]).order("id") : q.order("id");
-      if (t === "gs_vita_valori") q = supabase.from(t).select("*").gte("giorno", new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10));
+      if (t === "gs_vita_valori") q = supabase.from(t).select("*").gte("giorno", new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10)).order("id");
       if (t === "gs_vita_persone") q = supabase.from(t).select("*");
       if (t === "gs_controlli_valori") q = supabase.from(t).select("*").gte("giorno", new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10));
       if (t === "gs_kpi_valori") q = supabase.from(t).select("*").gte("settimana", new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10)).order("settimana");
@@ -23,6 +23,11 @@ function useDati(attivo) {
     }));
     const out = {};
     TABELLE.forEach((t, i) => { out[t.replace("gs_", "")] = res[i].data || []; });
+    // le abitudini dell'ultimo anno possono superare le 1000 righe che Supabase manda in una volta
+    for (let da = 1000; out.vita_valori.length === da; da += 1000) {
+      const { data: altro } = await supabase.from("gs_vita_valori").select("*").gte("giorno", new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10)).order("id").range(da, da + 999);
+      if (!altro?.length) break; out.vita_valori = out.vita_valori.concat(altro);
+    }
     out.errore = res.find((r) => r.error)?.error?.message || "";
     setD(out);
   }, []);
