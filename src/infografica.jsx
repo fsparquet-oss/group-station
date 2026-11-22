@@ -111,7 +111,7 @@ export function PercorsoObiettivi({ ctx, lista, scrive, onApri, colore = C.red }
           const pct = o.valore_attuale != null && o.valore_obiettivo ? Math.min(100, (Number(o.valore_attuale) / Number(o.valore_obiettivo)) * 100) : 0;
           const fatto = pct >= 100, giorni = o.scadenza ? giorniA(o.scadenza) : null;
           const nastro = (
-            <div style={{ width: mobile ? "50%" : "40%", flexShrink: 0, minHeight: mobile ? 118 : 136, background: `linear-gradient(${destra ? 100 : 260}deg, ${c1}, ${c2})`, borderRadius: destra ? "0 90px 90px 0" : "90px 0 0 90px", display: "flex", alignItems: "center", justifyContent: destra ? "flex-end" : "flex-start", padding: destra ? "0 34px 0 18px" : "0 18px 0 34px", color: "#fff", boxShadow: `0 14px 26px ${destra ? "rgba(0,0,0,.08)" : "rgba(0,0,0,.14)"}`, position: "relative", zIndex: lista.length - i }}>
+            <div style={{ width: mobile ? "42%" : "40%", flexShrink: 0, minHeight: mobile ? 118 : 136, background: `linear-gradient(${destra ? 100 : 260}deg, ${c1}, ${c2})`, borderRadius: destra ? "0 90px 90px 0" : "90px 0 0 90px", display: "flex", alignItems: "center", justifyContent: destra ? "flex-end" : "flex-start", padding: mobile ? (destra ? "0 22px 0 10px" : "0 10px 0 22px") : (destra ? "0 34px 0 18px" : "0 18px 0 34px"), color: "#fff", boxShadow: `0 14px 26px ${destra ? "rgba(0,0,0,.08)" : "rgba(0,0,0,.14)"}`, position: "relative", zIndex: lista.length - i }}>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: mobile ? 46 : 60, fontWeight: 200, lineHeight: 0.95, letterSpacing: -1 }}>{String(i + 1).padStart(2, "0")}</div>
                 <div style={{ fontSize: mobile ? 17 : 21, fontWeight: 300, marginTop: 2 }}>{Math.round(pct)}%</div>
@@ -119,7 +119,7 @@ export function PercorsoObiettivi({ ctx, lista, scrive, onApri, colore = C.red }
             </div>
           );
           const testoLato = (
-            <div style={{ flex: 1, padding: destra ? "0 0 0 18px" : "0 18px 0 0", textAlign: destra ? "left" : "right", minWidth: 0 }}>
+            <div style={{ flex: 1, padding: destra ? "0 0 0 14px" : "0 14px 0 0", textAlign: destra ? "left" : "right", minWidth: 0, position: "relative", zIndex: 50 }}>
               <div onClick={() => scrive && onApri && onApri(o)} style={{ fontSize: mobile ? 15 : 17, fontWeight: 500, color: i % NASTRO.length === 3 || i % NASTRO.length === 0 ? C.red : C.text, lineHeight: 1.25, cursor: scrive ? "pointer" : "default" }}>{o.titolo}</div>
               <div style={{ marginTop: 6 }}>
                 {modifica === o.id ? (
@@ -136,7 +136,7 @@ export function PercorsoObiettivi({ ctx, lista, scrive, onApri, colore = C.red }
           );
           return (
             <div key={o.id} style={{ display: "flex", alignItems: "center", marginTop: i ? -16 : 0 }}>
-              {destra ? <><div style={{ width: mobile ? "8%" : "18%", flexShrink: 0 }} />{nastro}{testoLato}</> : <>{testoLato}{nastro}<div style={{ width: mobile ? "8%" : "18%", flexShrink: 0 }} /></>}
+              {destra ? <><div style={{ width: mobile ? "0%" : "18%", flexShrink: 0 }} />{nastro}{testoLato}</> : <>{testoLato}{nastro}<div style={{ width: mobile ? "0%" : "18%", flexShrink: 0 }} /></>}
             </div>
           );
         })}
