@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "./supabase";
-import { C, Logo, Btn, Card, Field, Vuoto, settimanaScorsa, oggi } from "./ui";
-import { Home, Azienda, Accessi } from "./views";
+import { C, Logo, Btn, Card, Field, Vuoto, settimanaScorsa, oggi, vetro } from "./ui";
+import { Azienda, Accessi, scadenzeVicine } from "./views";
+import { Dashboard, PaginaOggi, PaginaObiettivi, PaginaOrg, PaginaScadenze } from "./dashboard";
 export { salva, elimina } from "./db";
 
 const TABELLE = ["gs_aziende", "gs_kpi", "gs_kpi_valori", "gs_persone", "gs_obiettivi", "gs_scadenze", "gs_attrezzature", "gs_procedure", "gs_documenti", "gs_onboarding", "gs_accessi", "gs_controlli", "gs_controlli_valori"];
@@ -67,6 +68,7 @@ export default function App() {
   const [vista, setVista] = useState(() => { try { return JSON.parse(localStorage.getItem("gs_vista")) || { tipo: "home" }; } catch { return { tipo: "home" }; } });
   const vai = (v) => { setVista(v); try { localStorage.setItem("gs_vista", JSON.stringify(v)); } catch {} window.scrollTo(0, 0); };
   const mobile = useMobile();
+  const [menu, setMenu] = useState(false);
   const [sett, setSett] = useState(settimanaScorsa());
   const [giorno, setGiorno] = useState(oggi());
 
@@ -94,35 +96,66 @@ export default function App() {
   const aziende = d.aziende;
   const visibili = aziende.filter((a) => admin || mieiAccessi.some((x) => x.azienda_id === a.id));
   const azienda = vista.tipo === "azienda" ? aziende.find((a) => a.id === vista.id) : null;
-  const ctx = { d, ricarica, admin, puoScrivere, email, vai, mobile, sett, setSett, giorno, setGiorno };
-  const pill = { border: "none", borderRadius: 999, background: C.card, color: C.text, fontSize: 14, fontWeight: 500, padding: "9px 16px", whiteSpace: "nowrap" };
+  const ctx = { d, ricarica, admin, puoScrivere, email, vai, mobile, sett, setSett, giorno, setGiorno, vista };
+  const nome = (sessione.user.user_metadata?.full_name || sessione.user.user_metadata?.name || email.split("@")[0]).split(" ")[0];
+  const nomeBello = nome.charAt(0).toUpperCase() + nome.slice(1);
+  const scadVicine = scadenzeVicine(d);
+  const icone = {
+    home: <path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z" />,
+    oggi: <><rect x="4" y="5" width="16" height="15" rx="2.5" /><path d="M8 3v4M16 3v4M4 10h16" /></>,
+    obiettivi: <><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="4" /><circle cx="12" cy="12" r="1" /></>,
+    organigramma: <><rect x="9" y="3" width="6" height="5" rx="1.5" /><rect x="3" y="16" width="6" height="5" rx="1.5" /><rect x="15" y="16" width="6" height="5" rx="1.5" /><path d="M12 8v4M6 16v-4h12v4" /></>,
+    scadenze: <><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8" /><path d="M10 20a2 2 0 0 0 4 0" /></>,
+    accessi: <><circle cx="9" cy="8" r="3.5" /><path d="M3 20c.5-3.5 3-5.5 6-5.5s5.5 2 6 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5c1.7.6 2.8 2.4 3 5.5" /></>,
+  };
+  const Icona = ({ k, size = 17 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{icone[k]}</svg>;
+  const voci = [["home", "Dashboard"], ["oggi", "Controlli di oggi"], ["obiettivi", "Obiettivi"], ["organigramma", "Organigramma"], ["scadenze", "Scadenze"]];
+  const vocePill = (attiva, onClick, contenuto, k) => (
+    <button key={k} onClick={() => { onClick(); setMenu(false); }} style={{ display: "flex", alignItems: "center", gap: 11, width: "100%", border: "none", borderRadius: 12, padding: "9px 12px", fontSize: 13.5, fontWeight: attiva ? 600 : 450, textAlign: "left", background: attiva ? C.text : "transparent", color: attiva ? "#fff" : C.text }}>{contenuto}</button>
+  );
+  const titoloSez = (t) => <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: 1.2, color: C.grey, textTransform: "uppercase", margin: "22px 12px 8px" }}>{t}</div>;
+  const barra = (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <button onClick={() => vai({ tipo: "home" })} style={{ display: "flex", alignItems: "center", gap: 10, border: "none", background: "none", padding: "4px 12px 22px" }}>
+        <Logo size={30} /><span style={{ fontSize: 17, fontWeight: 700, letterSpacing: -0.3, color: C.text }}>Group Station</span>
+      </button>
+      {voci.map(([k, l]) => vocePill(vista.tipo === k || (k === "home" && vista.tipo === "home"), () => vai({ tipo: k }), <><Icona k={k} />{l}</>, k))}
+      {titoloSez("Aziende")}
+      {visibili.map((a) => vocePill(azienda?.id === a.id, () => vai({ tipo: "azienda", id: a.id, tab: "oggi" }), <><span style={{ width: 9, height: 9, borderRadius: "50%", background: a.stato === "in pausa" ? C.line : a.colore, marginLeft: 4, marginRight: 4 }} /><span style={{ color: azienda?.id === a.id ? "#fff" : a.stato === "in pausa" ? C.grey : C.text }}>{a.nome}</span></>, "a" + a.id))}
+      {admin && <>{titoloSez("Gestione")}{vocePill(vista.tipo === "accessi", () => vai({ tipo: "accessi" }), <><Icona k="accessi" />Accessi</>, "acc")}</>}
+      <div style={{ flex: 1, minHeight: 20 }} />
+      <button onClick={esci} style={{ display: "flex", alignItems: "center", gap: 11, border: "none", background: "none", padding: "9px 12px", fontSize: 13.5, color: C.slate }}>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10" /></svg>Esci
+      </button>
+    </div>
+  );
+  const tondo = { width: 42, height: 42, borderRadius: "50%", border: "none", background: C.card, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", color: C.text, flexShrink: 0 };
 
   return (
-    <div style={{ maxWidth: 1120, margin: "0 auto", padding: mobile ? "14px 14px 110px" : "22px 32px 120px" }}>
-      <header style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-        <button onClick={() => vai({ tipo: "home" })} style={{ display: "flex", alignItems: "center", gap: 10, border: "none", background: "none", padding: 0 }}>
-          <Logo size={mobile ? 28 : 32} />
-          <span style={{ fontSize: mobile ? 14 : 17, fontWeight: 700, letterSpacing: mobile ? 1.8 : 2.6, color: C.text, whiteSpace: "nowrap" }}>GROUP STATION</span>
-        </button>
-        <div style={{ flex: 1 }} />
-        {admin && <button onClick={() => vai({ tipo: "accessi" })} style={{ ...pill, background: vista.tipo === "accessi" ? C.text : C.card, color: vista.tipo === "accessi" ? "#fff" : C.text }}>Accessi</button>}
-        <button onClick={esci} title={email} style={pill}>Esci</button>
-      </header>
-      <nav style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 22, scrollbarWidth: "none" }}>
-        {visibili.map((a) => {
-          const sel = azienda?.id === a.id, pausa = a.stato === "in pausa";
-          return (
-            <button key={a.id} onClick={() => vai({ tipo: "azienda", id: a.id, tab: "oggi" })} style={{ ...pill, display: "flex", alignItems: "center", gap: 9, background: sel ? C.text : C.card, color: sel ? "#fff" : pausa ? C.grey : C.text }}>
-              <span style={{ width: 9, height: 9, borderRadius: "50%", background: pausa ? C.line : a.colore, flexShrink: 0 }} />{a.nome}
-            </button>
-          );
-        })}
-      </nav>
-      {d.errore && <Card style={{ color: C.red, marginBottom: 14 }}>Errore nel caricamento: {d.errore}</Card>}
-      {vista.tipo === "accessi" && admin ? <Accessi ctx={ctx} />
-        : azienda ? <Azienda ctx={ctx} azienda={azienda} tab={vista.tab || "oggi"} setTab={(t) => vai({ ...vista, tab: t })} />
-        : vista.tipo === "azienda" ? <Vuoto>Azienda non trovata.</Vuoto>
-        : <Home ctx={ctx} />}
+    <div style={{ minHeight: "100vh", padding: mobile ? 0 : 24 }}>
+      <div style={{ maxWidth: 1320, margin: "0 auto", display: "flex", gap: 22, ...(mobile ? {} : { ...vetro, borderRadius: 34, padding: 22, minHeight: "calc(100vh - 48px)" }) }}>
+        {!mobile && <aside style={{ width: 228, flexShrink: 0, background: C.card, borderRadius: 26, padding: "22px 12px", position: "sticky", top: 46, alignSelf: "flex-start", height: "calc(100vh - 92px)", overflowY: "auto" }}>{barra}</aside>}
+        {mobile && menu && <div onClick={() => setMenu(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.25)", zIndex: 60 }}><div onClick={(e) => e.stopPropagation()} style={{ width: 270, height: "100%", background: C.card, padding: "22px 12px", overflowY: "auto" }}>{barra}</div></div>}
+        <main style={{ flex: 1, minWidth: 0, padding: mobile ? "14px 14px 110px" : "6px 4px 60px" }}>
+          <header style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
+            {mobile && <button onClick={() => setMenu(true)} style={tondo}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h10" /></svg></button>}
+            <div style={{ fontSize: mobile ? 22 : 28, fontWeight: 650, letterSpacing: -0.6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{azienda ? azienda.nome : `Ciao ${nomeBello}!`}</div>
+            <div style={{ flex: 1 }} />
+            {admin && !mobile && <button onClick={() => vai({ tipo: "obiettivi", nuovo: Date.now() })} style={{ border: "none", borderRadius: 999, background: C.text, color: "#fff", fontSize: 13.5, fontWeight: 500, padding: "11px 18px", display: "flex", alignItems: "center", gap: 7 }}>+ Nuovo obiettivo</button>}
+            <button title="Scadenze vicine" onClick={() => vai({ tipo: "scadenze" })} style={tondo}><Icona k="scadenze" size={18} />{scadVicine > 0 && <span style={{ position: "absolute", top: 8, right: 9, width: 8, height: 8, borderRadius: "50%", background: C.red, border: "2px solid #fff" }} />}</button>
+            <div title={email} style={{ ...tondo, background: C.text, color: "#fff", fontWeight: 600, fontSize: 15 }}>{nomeBello[0]}</div>
+          </header>
+          {d.errore && <Card style={{ color: C.red, marginBottom: 14 }}>Errore nel caricamento: {d.errore}</Card>}
+          {vista.tipo === "accessi" && admin ? <Accessi ctx={ctx} />
+            : azienda ? <Azienda ctx={ctx} azienda={azienda} tab={vista.tab || "oggi"} setTab={(t) => vai({ ...vista, tab: t })} />
+            : vista.tipo === "azienda" ? <Vuoto>Azienda non trovata.</Vuoto>
+            : vista.tipo === "oggi" ? <PaginaOggi ctx={ctx} />
+            : vista.tipo === "obiettivi" ? <PaginaObiettivi ctx={ctx} />
+            : vista.tipo === "organigramma" ? <PaginaOrg ctx={ctx} />
+            : vista.tipo === "scadenze" ? <PaginaScadenze ctx={ctx} />
+            : <Dashboard ctx={ctx} />}
+        </main>
+      </div>
     </div>
   );
 }

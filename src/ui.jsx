@@ -1,10 +1,41 @@
 import React, { useEffect } from "react";
 
-// Palette scelta da Fabio (21 nov. 2026): bianco, nero, ardesia, rosso come unico colore forte, grigi
+// Grafica 22 nov. 2026 (esempio scelto da Fabio): bianco e nero, schede di vetro, barra laterale. Rosso solo per gli avvisi.
 export const C = {
-  bg: "#f3f3f1", card: "#ffffff", text: "#111619", slate: "#37454e", red: "#8c0b0f",
-  grey: "#969694", line: "#d5d4d2", soft: "#efefed", green: "#2f7d4f", amber: "#b26b00",
+  bg: "#e7e7e5", card: "#ffffff", glass: "rgba(255,255,255,.62)", text: "#151515", slate: "#3b3b3b", red: "#8c0b0f",
+  grey: "#8f8f8d", line: "#dcdcd9", soft: "#f0f0ee", green: "#2f7d4f", amber: "#9a6a12", dark: "#1d1d1d",
 };
+export const vetro = { background: C.glass, backdropFilter: "blur(18px) saturate(1.2)", WebkitBackdropFilter: "blur(18px) saturate(1.2)", border: "1px solid rgba(255,255,255,.7)" };
+
+// Anello di avanzamento (es. 3/5)
+export function Anello({ pct = 0, size = 34, spessore = 3, colore = "#fff", fondo = "rgba(255,255,255,.25)", testo }) {
+  const r = (size - spessore) / 2, c = 2 * Math.PI * r, v = Math.max(0, Math.min(100, pct));
+  return (
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={fondo} strokeWidth={spessore} /><circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={colore} strokeWidth={spessore} strokeDasharray={c} strokeDashoffset={c * (1 - v / 100)} strokeLinecap="round" /></svg>
+      {testo != null && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size > 60 ? 15 : 8.5, fontWeight: 600, color: colore }}>{testo}</div>}
+    </div>
+  );
+}
+
+// Grafico a linee morbide (andamento della settimana)
+export function Linee({ serie, etichette, evidenzia, altezza = 120 }) {
+  const W = 300, H = altezza, n = etichette.length;
+  const x = (i) => 10 + (i * (W - 20)) / Math.max(1, n - 1);
+  const y = (v) => H - 8 - (Math.max(0, Math.min(100, v || 0)) / 100) * (H - 22);
+  const curva = (vals) => vals.map((v, i) => { if (i === 0) return `M${x(0)},${y(v)}`; const x0 = x(i - 1), x1 = x(i), m = (x0 + x1) / 2; return `C${m},${y(vals[i - 1])} ${m},${y(v)} ${x1},${y(v)}`; }).join(" ");
+  return (
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: altezza, overflow: "visible" }}>
+        {serie.map((s, k) => <path key={k} d={curva(s.valori)} fill="none" stroke={s.colore} strokeWidth={k === 0 ? 2.2 : 1.6} strokeLinecap="round" />)}
+        {evidenzia != null && <><line x1={x(evidenzia)} x2={x(evidenzia)} y1={y(serie[0].valori[evidenzia])} y2={H} stroke={C.text} strokeWidth="1" strokeDasharray="2 3" /><circle cx={x(evidenzia)} cy={y(serie[0].valori[evidenzia])} r="3.5" fill={C.text} /></>}
+      </svg>
+      <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 2px 0" }}>
+        {etichette.map((e, i) => <span key={i} style={{ width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11.5, background: i === evidenzia ? C.text : "transparent", color: i === evidenzia ? "#fff" : C.slate }}>{e}</span>)}
+      </div>
+    </div>
+  );
+}
 
 export const euro = (n) => n == null || n === "" || isNaN(n) ? "—" : "€ " + Math.round(Number(n)).toLocaleString("it-IT", { useGrouping: "always" });
 export const num = (n, unita) => {
@@ -67,7 +98,7 @@ export function Tile({ label, n, value, color, bg = C.card, onClick, style, smal
 // Selettore a pillole dentro un contenitore bianco
 export function Segment({ items, value, onChange, accent = C.text, style }) {
   return (
-    <div style={{ display: "flex", gap: 4, background: C.card, borderRadius: 999, padding: 5, overflowX: "auto", maxWidth: "100%", ...style }}>
+    <div style={{ display: "flex", gap: 4, ...vetro, borderRadius: 999, padding: 5, overflowX: "auto", maxWidth: "100%", ...style }}>
       {items.map(([k, l]) => <button key={k} onClick={() => onChange(k)} style={{ border: "none", borderRadius: 999, padding: "9px 16px", fontSize: 14.5, fontWeight: value === k ? 600 : 500, whiteSpace: "nowrap", background: value === k ? accent : "transparent", color: value === k ? "#fff" : C.text }}>{l}</button>)}
     </div>
   );
@@ -75,7 +106,7 @@ export function Segment({ items, value, onChange, accent = C.text, style }) {
 
 // Pulsante rosso fisso in basso (es. "+ Ruolo", "+ Scadenza")
 export const Fab = ({ children, onClick }) => (
-  <button onClick={onClick} style={{ position: "fixed", bottom: 22, left: "50%", transform: "translateX(-50%)", zIndex: 30, border: "none", borderRadius: 999, background: C.red, color: "#fff", fontSize: 15.5, fontWeight: 600, padding: "14px 24px", boxShadow: "0 10px 30px rgba(140,11,15,.35)" }}>{children}</button>
+  <button onClick={onClick} style={{ position: "fixed", bottom: 22, left: "50%", transform: "translateX(-50%)", zIndex: 30, border: "none", borderRadius: 999, background: C.text, color: "#fff", fontSize: 15, fontWeight: 600, padding: "14px 24px", boxShadow: "0 10px 30px rgba(0,0,0,.25)" }}>{children}</button>
 );
 
 export function Btn({ children, variant = "dark", small, style, ...p }) {
@@ -91,7 +122,7 @@ export function Btn({ children, variant = "dark", small, style, ...p }) {
 }
 
 export function Card({ children, style, ...p }) {
-  return <div {...p} style={{ background: C.card, borderRadius: 22, padding: 20, ...style }}>{children}</div>;
+  return <div {...p} style={{ background: C.card, borderRadius: 24, padding: 20, boxShadow: "0 1px 2px rgba(0,0,0,.03)", ...style }}>{children}</div>;
 }
 
 export const etichetta = { fontSize: 12, fontWeight: 600, color: C.slate, marginBottom: 5, display: "block" };

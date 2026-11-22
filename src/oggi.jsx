@@ -100,7 +100,7 @@ export function ControlliAzienda({ ctx, azienda, scrive, titolo, onApri }) {
             const fatto = !!val(c)?.fatto;
             return (
               <div key={c.id} onClick={() => scrive && scrivi(c, { fatto: !fatto })} style={{ display: "flex", alignItems: "center", gap: 12, background: C.soft, borderRadius: 14, padding: "11px 13px", cursor: scrive ? "pointer" : "default" }}>
-                <span style={{ width: 26, height: 26, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, border: fatto ? "none" : `1.5px solid ${C.line}`, background: fatto ? C.green : "#fff", color: "#fff" }}>{fatto ? "✓" : ""}</span>
+                <span style={{ width: 19, height: 19, borderRadius: 5, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, border: fatto ? "none" : `1.5px solid ${C.line}`, background: fatto ? C.text : "#fff", color: "#fff" }}>{fatto ? "✓" : ""}</span>
                 <span style={{ fontSize: 14.5, color: fatto ? C.grey : C.text, textDecoration: fatto ? "line-through" : "none" }}>{c.nome}</span>
               </div>
             );
@@ -173,7 +173,7 @@ export function OggiGruppo({ ctx, aziende }) {
       <div style={{ ...sfondo, borderRadius: 24, padding: "20px 22px", color: "#fff", marginTop: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}><Dot color={C.red} size={9} /><Label color="rgba(255,255,255,.7)">Controlli fatti {giorniA(giorno) === 0 ? "oggi" : "il " + data(giorno)}</Label></div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 10 }}><span style={{ fontSize: 52, fontWeight: 200, letterSpacing: -1.5 }}>{fatti}/{totale}</span><span style={{ fontSize: 16, color: "rgba(255,255,255,.6)" }}>{pct}%</span></div>
-        <div style={{ height: 6, background: "rgba(255,255,255,.15)", borderRadius: 9, marginTop: 12, overflow: "hidden" }}><div style={{ width: pct + "%", height: "100%", background: pct === 100 ? "#4fbf7f" : C.red, borderRadius: 9 }} /></div>
+        <div style={{ height: 4, background: "rgba(255,255,255,.15)", borderRadius: 9, marginTop: 12, overflow: "hidden" }}><div style={{ width: pct + "%", height: "100%", background: "#fff", borderRadius: 9 }} /></div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: ctx.mobile ? "1fr" : "1fr 1fr", gap: 12, marginTop: 12, alignItems: "start" }}>
         {stati.map(({ a }, i) => (

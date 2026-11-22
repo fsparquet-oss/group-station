@@ -20,14 +20,16 @@ const titolo = (t, sotto, azioni) => (
     {azioni && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{azioni}</div>}
   </div>
 );
-const sezione = (t, azione) => (
+export const sezione = (t, azione) => (
   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "26px 0 10px", gap: 10 }}>
     <Label>{t}</Label>{azione}
   </div>
 );
 
 // Tutte le scadenze: quelle inserite + quelle automatiche (fine prova, contratti, attrezzature)
-function tutteScadenze(d, aziendaId) {
+export const scadenzeVicine = (d) => tutteScadenze(d).filter((s) => s.giorni <= (s.avviso_giorni ?? 30)).length;
+
+export function tutteScadenze(d, aziendaId) {
   const per = (x) => aziendaId == null || x.azienda_id === aziendaId;
   const nomeP = (id) => d.persone.find((p) => p.id === id);
   const out = d.scadenze.filter(per).map((s) => ({ ...s, origine: "manuale" }));
@@ -38,8 +40,8 @@ function tutteScadenze(d, aziendaId) {
   for (const a of d.attrezzature.filter(per)) if (a.scadenza) out.push({ chiave: "att" + a.id, azienda_id: a.azienda_id, titolo: `${a.tipo === "furgone" ? "Revisione/assicurazione" : "Scadenza"} · ${a.nome}${a.codice ? " " + a.codice : ""}`, tipo: "revisione", data: a.scadenza, avviso_giorni: 30, origine: "auto", persona_id: a.persona_id });
   return out.filter((s) => s.data && !s.fatto).map((s) => ({ ...s, giorni: giorniA(s.data), persona: nomeP(s.persona_id) })).sort((a, b) => a.data.localeCompare(b.data));
 }
-const coloreScad = (s) => s.giorni < 0 ? C.red : s.giorni <= (s.avviso_giorni ?? 30) ? C.amber : C.grey;
-const testoGiorni = (g) => g < 0 ? `scaduta da ${-g} gg` : g === 0 ? "oggi" : `tra ${g} gg`;
+export const coloreScad = (s) => s.giorni < 0 ? C.red : s.giorni <= (s.avviso_giorni ?? 30) ? C.amber : C.grey;
+export const testoGiorni = (g) => g < 0 ? `scaduta da ${-g} gg` : g === 0 ? "oggi" : `tra ${g} gg`;
 
 // ─────────────────────────────────────────── HOME DEL GRUPPO
 const sfondoPunti = { backgroundColor: C.text, backgroundImage: "radial-gradient(rgba(255,255,255,.09) 1px, transparent 1.2px)", backgroundSize: "9px 9px" };
@@ -152,7 +154,7 @@ export function Home({ ctx }) {
 }
 
 // Organigramma diviso per azienda: scegli l'azienda e vedi il suo diagramma a pillole
-function OrgPerAzienda({ ctx, aziende }) {
+export function OrgPerAzienda({ ctx, aziende }) {
   const { d } = ctx;
   const prima = aziende.find((a) => !/direzione/i.test(a.nome)) || aziende[0];
   const [scelta, setScelta] = useState(prima ? prima.id : "gruppo");
@@ -270,13 +272,9 @@ export function Azienda({ ctx, azienda, tab, setTab }) {
   const p = { ctx, azienda, scrive };
   return (
     <>
-      <button onClick={() => ctx.vai({ tipo: "home" })} style={{ border: "none", background: "none", padding: 0, color: C.slate, fontSize: 14.5, marginBottom: 8 }}>‹ Il gruppo</button>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 18 }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}><span style={{ width: 14, height: 14, borderRadius: "50%", background: azienda.colore, flexShrink: 0, transform: "translateY(-3px)" }} /><span style={{ fontSize: ctx.mobile ? 30 : 36, fontWeight: 650, letterSpacing: -1, lineHeight: 1.05 }}>{azienda.nome}</span></div>
-          <div style={{ fontSize: 16, color: C.grey, marginTop: 8, marginLeft: 26 }}>{azienda.descrizione}{azienda.stato === "in pausa" ? ` · in pausa${azienda.pausa_fino ? " fino al " + data(azienda.pausa_fino) : ""}` : ""}</div>
-        </div>
-        {ctx.admin && <Btn variant="ghost" onClick={() => setModAz(true)} style={{ padding: "12px 20px" }}>Impostazioni</Btn>}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginTop: -12, marginBottom: 16 }}>
+        <div style={{ fontSize: 14, color: C.grey, display: "flex", alignItems: "center", gap: 8 }}><span style={{ width: 9, height: 9, borderRadius: "50%", background: azienda.colore }} />{azienda.descrizione}{azienda.stato === "in pausa" ? ` · in pausa${azienda.pausa_fino ? " fino al " + data(azienda.pausa_fino) : ""}` : ""}</div>
+        {ctx.admin && <Btn variant="ghost" small onClick={() => setModAz(true)}>Impostazioni</Btn>}
       </div>
       <Segment items={TABS} value={tab === "panoramica" ? "oggi" : tab} onChange={setTab} style={{ marginBottom: 18 }} />
       {(tab === "oggi" || tab === "panoramica") && <><SceltaGiorno ctx={ctx} /><div style={{ height: 12 }} /><ControlliAzienda ctx={ctx} azienda={azienda} scrive={scrive} titolo={false} /></>}
@@ -518,7 +516,7 @@ function Organigramma({ ctx, azienda, scrive }) {
   );
 }
 
-function SchedaPersona({ ctx, azienda, scrive, p, onClose }) {
+export function SchedaPersona({ ctx, azienda, scrive, p, onClose }) {
   const { d } = ctx;
   const [modifica, setModifica] = useState(!p.nome || !p.id);
   const [f, setF] = useState(p);
@@ -740,7 +738,7 @@ function Scadenze({ ctx, azienda, scrive }) {
   );
 }
 
-function ModificaScadenza({ ctx, azienda, s, onClose }) {
+export function ModificaScadenza({ ctx, azienda, s, onClose }) {
   const [f, setF] = useState(s);
   const set = (k) => (v) => setF((x) => ({ ...x, [k]: v }));
   const pers = ctx.d.persone.filter((p) => p.azienda_id === azienda.id && p.nome);
@@ -807,15 +805,16 @@ function Obiettivi({ ctx, azienda, scrive }) {
   );
 }
 
-function ModificaObiettivo({ ctx, azienda, o, onClose }) {
+export function ModificaObiettivo({ ctx, azienda, o, onClose }) {
   const [f, setF] = useState(o);
   const s = (k) => (v) => setF((x) => ({ ...x, [k]: v }));
   const n = (v) => v === "" || v == null ? null : Number(String(v).replace(/\./g, "").replace(",", "."));
-  const ok = async () => { if (!f.titolo) return alert("Scrivi l'obiettivo"); await salva("gs_obiettivi", { id: f.id, azienda_id: azienda.id, titolo: f.titolo, descrizione: f.descrizione || null, scadenza: f.scadenza || null, stato: f.stato, responsabile: f.responsabile || null, valore_obiettivo: n(f.valore_obiettivo), valore_attuale: n(f.valore_attuale), unita: f.unita || null }); await ctx.ricarica(); onClose(); };
+  const ok = async () => { if (!f.titolo) return alert("Scrivi l'obiettivo"); if (!azienda && !f.azienda_id) return alert("Scegli l'azienda"); await salva("gs_obiettivi", { id: f.id, azienda_id: azienda ? azienda.id : Number(f.azienda_id), titolo: f.titolo, descrizione: f.descrizione || null, scadenza: f.scadenza || null, stato: f.stato, responsabile: f.responsabile || null, valore_obiettivo: n(f.valore_obiettivo), valore_attuale: n(f.valore_attuale), unita: f.unita || null }); await ctx.ricarica(); onClose(); };
   const del = async () => { if (!confirm("Eliminare l'obiettivo?")) return; await elimina("gs_obiettivi", f.id); await ctx.ricarica(); onClose(); };
   return (
     <Modal title={f.id ? "Obiettivo" : "Nuovo obiettivo"} onClose={onClose}>
       <div style={{ display: "grid", gap: 12 }}>
+        {!azienda && <Field label="Azienda" value={f.azienda_id ?? ""} onChange={s("azienda_id")} options={[{ value: "", label: "— scegli" }, ...ctx.d.aziende.filter((a) => a.stato !== "in pausa").map((a) => ({ value: a.id, label: a.nome }))]} />}
         <Field label="Obiettivo" value={f.titolo} onChange={s("titolo")} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
           <Field label="Dove sei ora" type="number" value={f.valore_attuale} onChange={s("valore_attuale")} />
