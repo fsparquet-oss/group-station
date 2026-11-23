@@ -73,15 +73,15 @@ export function Dashboard({ ctx }) {
         <div style={{ background: C.dark, color: "#fff", borderRadius: 24, padding: 20, display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><div style={{ fontSize: 16, fontWeight: 500 }}>Situazione del gruppo</div><button onClick={() => vai({ tipo: "oggi" })} style={{ border: "none", background: "none", color: "#fff" }}><Puntini /></button></div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 18 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}><span style={{ fontSize: 40, fontWeight: 500, letterSpacing: -1 }}>{fatti}</span><span style={{ fontSize: 11.5, color: "rgba(255,255,255,.6)", lineHeight: 1.2 }}>controlli fatti<br />oggi su {totale}</span></div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}><span style={{ fontSize: 44, fontWeight: 300, letterSpacing: -1 }}>{fatti}</span><span style={{ fontSize: 11.5, color: "rgba(255,255,255,.6)", lineHeight: 1.2 }}>controlli fatti<br />oggi su {totale}</span></div>
             <div style={{ width: 1, height: 34, background: "rgba(255,255,255,.2)" }} />
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}><span style={{ fontSize: 40, fontWeight: 500, letterSpacing: -1 }}>{vuote}</span><span style={{ fontSize: 11.5, color: "rgba(255,255,255,.6)", lineHeight: 1.2 }}>ruoli<br />da coprire</span></div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}><span style={{ fontSize: 44, fontWeight: 300, letterSpacing: -1 }}>{vuote}</span><span style={{ fontSize: 11.5, color: "rgba(255,255,255,.6)", lineHeight: 1.2 }}>ruoli<br />da coprire</span></div>
           </div>
-          <div style={{ width: 56, height: 4, background: "#fff", borderRadius: 4, margin: "14px 0 16px" }} />
+          <div style={{ width: 56, height: 4, background: "#f4efe4", borderRadius: 4, margin: "14px 0 16px" }} />
           <div style={{ display: "flex", gap: 8, marginTop: "auto" }}>
             {tileChiara(attive.length, "Aziende", "#bdbdbb")}
-            {tileChiara(vicine.length, "Scadenze", "#fff", vicine.length ? C.red : C.text)}
-            {tileChiara(`${raggiunti}/${obN.length}`, "Obiettivi", "#fff")}
+            {tileChiara(vicine.length, "Scadenze", "#f4efe4", vicine.length ? C.red : C.text)}
+            {tileChiara(`${raggiunti}/${obN.length}`, "Obiettivi", "#f4efe4")}
           </div>
         </div>
 

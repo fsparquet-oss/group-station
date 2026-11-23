@@ -1,11 +1,14 @@
 import React, { useEffect } from "react";
 
-// Grafica 22 nov. 2026 (esempio scelto da Fabio): bianco e nero, schede di vetro, barra laterale. Rosso solo per gli avvisi.
+// Grafica 23 nov. 2026 (esempi scelti da Fabio): tutto di vetro su sfondo caldo sfumato con bagliore arancio,
+// schede chiare trasparenti, schede scure di vetro fumé per i numeri importanti, pillole. Rosso solo per gli avvisi.
+// Le schede con C.card / C.dark prendono la sfocatura dal foglio di stile in index.html (stessi valori rgba).
 export const C = {
-  bg: "#e7e7e5", card: "#ffffff", glass: "rgba(255,255,255,.62)", text: "#151515", slate: "#3b3b3b", red: "#8c0b0f",
-  grey: "#8f8f8d", line: "#dcdcd9", soft: "#f0f0ee", green: "#2f7d4f", amber: "#9a6a12", dark: "#1d1d1d",
+  bg: "rgba(255,255,255,.38)", card: "rgba(255,255,255,.52)", glass: "rgba(255,255,255,.22)", text: "#151515", slate: "#3b3b3b", red: "#8c0b0f",
+  grey: "#8a8580", line: "#ddd6cf", soft: "rgba(255,255,255,.72)", green: "#2f7d4f", amber: "#9a6a12", dark: "rgba(28,27,27,.84)", orange: "#fe7f2d",
 };
-export const vetro = { background: C.glass, backdropFilter: "blur(18px) saturate(1.2)", WebkitBackdropFilter: "blur(18px) saturate(1.2)", border: "1px solid rgba(255,255,255,.7)" };
+export const blur = (n = 22) => ({ backdropFilter: `blur(${n}px) saturate(1.4)`, WebkitBackdropFilter: `blur(${n}px) saturate(1.4)` });
+export const vetro = { background: C.glass, ...blur(26), border: "1px solid rgba(255,255,255,.55)" };
 
 // Anello di avanzamento (es. 3/5)
 export function Anello({ pct = 0, size = 34, spessore = 3, colore = "#fff", fondo = "rgba(255,255,255,.25)", testo }) {
@@ -122,11 +125,11 @@ export function Btn({ children, variant = "dark", small, style, ...p }) {
 }
 
 export function Card({ children, style, ...p }) {
-  return <div {...p} style={{ background: C.card, borderRadius: 24, padding: 20, boxShadow: "0 1px 2px rgba(0,0,0,.03)", ...style }}>{children}</div>;
+  return <div {...p} style={{ background: C.card, borderRadius: 26, padding: 20, ...style }}>{children}</div>;
 }
 
 export const etichetta = { fontSize: 12, fontWeight: 600, color: C.slate, marginBottom: 5, display: "block" };
-const campo = { width: "100%", padding: "11px 13px", borderRadius: 14, border: "none", background: C.soft, color: C.text, outline: "none" };
+const campo = { width: "100%", padding: "12px 16px", borderRadius: 999, border: "1px solid rgba(255,255,255,.9)", background: C.soft, color: C.text, outline: "none" };
 
 export function Field({ label, value, onChange, type = "text", placeholder, area, options, style, hint }) {
   return (
@@ -137,7 +140,7 @@ export function Field({ label, value, onChange, type = "text", placeholder, area
           {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       ) : area ? (
-        <textarea value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={area === true ? 4 : area} style={{ ...campo, resize: "vertical", lineHeight: 1.5 }} />
+        <textarea value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={area === true ? 4 : area} style={{ ...campo, borderRadius: 18, resize: "vertical", lineHeight: 1.5 }} />
       ) : (
         <input type={type} value={value ?? ""} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={campo} inputMode={type === "number" ? "decimal" : undefined} />
       )}
@@ -149,11 +152,11 @@ export function Field({ label, value, onChange, type = "text", placeholder, area
 export function Modal({ title, onClose, children, wide }) {
   useEffect(() => { const f = (e) => e.key === "Escape" && onClose(); window.addEventListener("keydown", f); return () => window.removeEventListener("keydown", f); }, [onClose]);
   return (
-    <div onMouseDown={(e) => e.target === e.currentTarget && onClose()} style={{ position: "fixed", inset: 0, background: "rgba(17,22,25,.35)", zIndex: 50, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "6vh 14px", overflowY: "auto" }}>
-      <div style={{ background: C.card, borderRadius: 22, width: "100%", maxWidth: wide ? 760 : 520, padding: 24, boxShadow: "0 20px 60px rgba(0,0,0,.18)" }}>
+    <div onMouseDown={(e) => e.target === e.currentTarget && onClose()} style={{ position: "fixed", inset: 0, background: "rgba(40,30,20,.22)", ...blur(6), zIndex: 50, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "6vh 14px", overflowY: "auto" }}>
+      <div style={{ background: "rgba(252,250,247,.9)", ...blur(30), border: "1px solid rgba(255,255,255,.9)", borderRadius: 28, width: "100%", maxWidth: wide ? 760 : 520, padding: 24, boxShadow: "0 24px 70px rgba(60,40,20,.2)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <div style={{ fontSize: 18, fontWeight: 700 }}>{title}</div>
-          <button onClick={onClose} style={{ border: "none", background: C.soft, width: 32, height: 32, borderRadius: "50%", fontSize: 15 }}>✕</button>
+          <button onClick={onClose} style={{ border: "none", background: "rgba(0,0,0,.06)", width: 32, height: 32, borderRadius: "50%", fontSize: 15 }}>✕</button>
         </div>
         {children}
       </div>

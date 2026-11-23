@@ -149,7 +149,7 @@ export function Rituale({ ctx, abitudini }) {
   const sotto = { fontSize: 11.5, color: "rgba(255,255,255,.5)", marginTop: 10 };
 
   return (
-    <div style={{ background: "#0b0b0b", color: "#fff", borderRadius: 28, padding: ctx.mobile ? 14 : 20, marginTop: 22 }}>
+    <div style={{ background: C.dark, color: "#fff", borderRadius: 28, padding: ctx.mobile ? 14 : 20, marginTop: 22 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "2px 4px 12px" }}>
         <div style={{ fontSize: 16, fontWeight: 600 }}>Il mio rituale</div>
         <select value={serieSel} onChange={(e) => setSerieSel(e.target.value)} style={{ background: "#1d1d1d", color: "#fff", border: "none", borderRadius: 999, padding: "7px 12px", fontSize: 13, maxWidth: "60%" }}>

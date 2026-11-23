@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "./supabase";
-import { C, Logo, Btn, Card, Field, Vuoto, settimanaScorsa, oggi, vetro } from "./ui";
+import { C, Logo, Btn, Card, Field, Vuoto, settimanaScorsa, oggi, vetro, blur } from "./ui";
 import { Azienda, Accessi, scadenzeVicine } from "./views";
 import { Dashboard, PaginaOggi, PaginaObiettivi, PaginaOrg, PaginaScadenze } from "./dashboard";
 import { PaginaVita } from "./vita";
@@ -150,7 +150,7 @@ export default function App() {
       voci={[...navVoci.map(([k, l]) => ({ k, label: l, icon: <Icona k={k} size={21} /> })), { k: "altro", label: "Altro", icon: <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h10" /></svg> }]}
       attiva={navAttiva < 0 || menu ? navVoci.length : navAttiva}
       onSelect={(j) => (j < navVoci.length ? (setMenu(false), vai({ tipo: navVoci[j][0] })) : setMenu(true))}
-      colori={{ barra: C.card, pallino: C.text, iconaAttiva: "#fff", icona: C.grey, etichettaAttiva: C.text, ombra: "0 -4px 14px rgba(0,0,0,.06)" }}
+      colori={{ barra: "rgba(250,247,243,.94)", pallino: C.text, iconaAttiva: "#fff", icona: C.grey, etichettaAttiva: C.text, ombra: "0 -6px 20px rgba(80,55,30,.08)" }}
     />
   );
   const tondo = { width: 42, height: 42, borderRadius: "50%", border: "none", background: C.card, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", color: C.text, flexShrink: 0 };
@@ -159,7 +159,7 @@ export default function App() {
     <div style={{ minHeight: "100vh", padding: mobile ? 0 : 24 }}>
       <div style={{ maxWidth: 1320, margin: "0 auto", display: "flex", gap: 22, ...(mobile ? {} : { ...vetro, borderRadius: 34, padding: 22, minHeight: "calc(100vh - 48px)" }) }}>
         {!mobile && <aside style={{ width: 228, flexShrink: 0, background: C.card, borderRadius: 26, padding: "22px 12px", position: "sticky", top: 46, alignSelf: "flex-start", height: "calc(100vh - 92px)", overflowY: "auto" }}>{barra}</aside>}
-        {mobile && menu && <div onClick={() => setMenu(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.25)", zIndex: 60 }}><div onClick={(e) => e.stopPropagation()} style={{ width: 270, height: "100%", background: C.card, padding: "22px 12px", overflowY: "auto" }}>{barra}</div></div>}
+        {mobile && menu && <div onClick={() => setMenu(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.25)", zIndex: 60 }}><div onClick={(e) => e.stopPropagation()} style={{ width: 270, height: "100%", background: "rgba(250,247,243,.88)", ...blur(28), borderRadius: "0 28px 28px 0", padding: "22px 12px", overflowY: "auto" }}>{barra}</div></div>}
         <main style={{ flex: 1, minWidth: 0, padding: mobile ? "14px 14px calc(120px + env(safe-area-inset-bottom))" : "6px 4px 60px" }}>
           <header style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
             <div style={{ fontSize: mobile ? 22 : 28, fontWeight: 650, letterSpacing: -0.6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{azienda ? azienda.nome : vista.tipo === "vita" ? "La mia vita" : `Ciao ${nomeBello}!`}</div>
