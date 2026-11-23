@@ -4,10 +4,11 @@ import { C, Logo, Btn, Card, Field, Vuoto, settimanaScorsa, oggi, vetro, blur } 
 import { Azienda, Accessi, scadenzeVicine } from "./views";
 import { Dashboard, PaginaOggi, PaginaObiettivi, PaginaOrg, PaginaScadenze } from "./dashboard";
 import { PaginaVita } from "./vita";
+import { PaginaBigliettini } from "./bigliettini";
 import BottomNav from "./bottomnav";
 export { salva, elimina } from "./db";
 
-const TABELLE = ["gs_aziende", "gs_kpi", "gs_kpi_valori", "gs_persone", "gs_obiettivi", "gs_scadenze", "gs_attrezzature", "gs_procedure", "gs_documenti", "gs_onboarding", "gs_accessi", "gs_controlli", "gs_controlli_valori", "gs_vita_persone", "gs_vita_abitudini", "gs_vita_valori", "gs_vita_obiettivi", "gs_vita_fisse", "gs_vita_piani", "gs_vita_letture", "gs_vita_passi"];
+const TABELLE = ["gs_aziende", "gs_kpi", "gs_kpi_valori", "gs_persone", "gs_obiettivi", "gs_scadenze", "gs_attrezzature", "gs_procedure", "gs_documenti", "gs_onboarding", "gs_accessi", "gs_controlli", "gs_controlli_valori", "gs_vita_persone", "gs_vita_abitudini", "gs_vita_valori", "gs_vita_obiettivi", "gs_vita_fisse", "gs_vita_piani", "gs_vita_letture", "gs_vita_passi", "gs_bigliettini"];
 const ORDINE = { gs_aziende: "ordine", gs_kpi: "ordine", gs_persone: "ordine", gs_onboarding: "ordine", gs_controlli: "ordine", gs_vita_abitudini: "ordine", gs_vita_obiettivi: "ordine", gs_vita_fisse: "ordine" };
 
 function useDati(attivo) {
@@ -19,6 +20,7 @@ function useDati(attivo) {
       let q = supabase.from(t).select("*");
       q = ORDINE[t] ? q.order(ORDINE[t]).order("id") : q.order("id");
       if (t === "gs_vita_valori") q = supabase.from(t).select("*").gte("giorno", new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10)).order("id");
+      if (t === "gs_bigliettini") q = supabase.from(t).select("*").gte("giorno", new Date(Date.now() - 45 * 86400000).toISOString().slice(0, 10)).order("giorno").order("id");
       if (t === "gs_vita_persone") q = supabase.from(t).select("*");
       if (t === "gs_controlli_valori") q = supabase.from(t).select("*").gte("giorno", new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10));
       if (t === "gs_kpi_valori") q = supabase.from(t).select("*").gte("settimana", new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10)).order("settimana");
@@ -117,12 +119,13 @@ export default function App() {
     oggi: <><rect x="4" y="5" width="16" height="15" rx="2.5" /><path d="M8 3v4M16 3v4M4 10h16" /></>,
     obiettivi: <><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="4" /><circle cx="12" cy="12" r="1" /></>,
     organigramma: <><rect x="9" y="3" width="6" height="5" rx="1.5" /><rect x="3" y="16" width="6" height="5" rx="1.5" /><rect x="15" y="16" width="6" height="5" rx="1.5" /><path d="M12 8v4M6 16v-4h12v4" /></>,
+    bigliettini: <><path d="M5 4h14v11l-5 5H5z" /><path d="M14 20v-5h5M8 9h8M8 12.5h5" /></>,
     scadenze: <><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8" /><path d="M10 20a2 2 0 0 0 4 0" /></>,
     vita: <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />,
     accessi: <><circle cx="9" cy="8" r="3.5" /><path d="M3 20c.5-3.5 3-5.5 6-5.5s5.5 2 6 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5c1.7.6 2.8 2.4 3 5.5" /></>,
   };
   const Icona = ({ k, size = 17 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{icone[k]}</svg>;
-  const voci = [["home", "Dashboard"], ["oggi", "Controlli di oggi"], ["obiettivi", "Obiettivi"], ["organigramma", "Organigramma"], ["scadenze", "Scadenze"]];
+  const voci = [["home", "Dashboard"], ["bigliettini", "Bigliettini del giorno"], ["oggi", "Controlli di oggi"], ["obiettivi", "Obiettivi"], ["organigramma", "Organigramma"], ["scadenze", "Scadenze"]];
   const vocePill = (attiva, onClick, contenuto, k) => (
     <button key={k} onClick={() => { onClick(); setMenu(false); }} style={{ display: "flex", alignItems: "center", gap: 11, width: "100%", border: "none", borderRadius: 12, padding: "9px 12px", fontSize: 13.5, fontWeight: attiva ? 600 : 450, textAlign: "left", background: attiva ? C.text : "transparent", color: attiva ? "#fff" : C.text }}>{contenuto}</button>
   );
@@ -143,7 +146,7 @@ export default function App() {
       </button>
     </div>
   );
-  const navVoci = [["home", "Dashboard"], ["oggi", "Oggi"], ["obiettivi", "Obiettivi"], ["organigramma", "Organigramma"]];
+  const navVoci = [["home", "Dashboard"], ["bigliettini", "Bigliettini"], ["oggi", "Oggi"], ["organigramma", "Organigramma"]];
   const navAttiva = navVoci.findIndex(([k]) => vista.tipo === k);
   const bottomNav = mobile && (
     <BottomNav
@@ -162,7 +165,7 @@ export default function App() {
         {mobile && menu && <div onClick={() => setMenu(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.25)", zIndex: 60 }}><div onClick={(e) => e.stopPropagation()} style={{ width: 270, height: "100%", background: "rgba(250,247,243,.88)", ...blur(28), borderRadius: "0 28px 28px 0", padding: "22px 12px", overflowY: "auto" }}>{barra}</div></div>}
         <main style={{ flex: 1, minWidth: 0, padding: mobile ? "14px 14px calc(120px + env(safe-area-inset-bottom))" : "6px 4px 60px" }}>
           <header style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
-            <div style={{ fontSize: mobile ? 22 : 28, fontWeight: 650, letterSpacing: -0.6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{azienda ? azienda.nome : vista.tipo === "vita" ? "La mia vita" : `Ciao ${nomeBello}!`}</div>
+            <div style={{ fontSize: mobile ? 22 : 28, fontWeight: 650, letterSpacing: -0.6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{azienda ? azienda.nome : vista.tipo === "vita" ? "La mia vita" : vista.tipo === "bigliettini" ? "Bigliettini del giorno" : `Ciao ${nomeBello}!`}</div>
             <div style={{ flex: 1 }} />
             {admin && !mobile && <button onClick={() => vai({ tipo: "obiettivi", nuovo: Date.now() })} style={{ border: "none", borderRadius: 999, background: C.text, color: "#fff", fontSize: 13.5, fontWeight: 500, padding: "11px 18px", display: "flex", alignItems: "center", gap: 7 }}>+ Nuovo obiettivo</button>}
             <button title="Scadenze vicine" onClick={() => vai({ tipo: "scadenze" })} style={tondo}><Icona k="scadenze" size={18} />{scadVicine > 0 && <span style={{ position: "absolute", top: 8, right: 9, width: 8, height: 8, borderRadius: "50%", background: C.red, border: "2px solid #fff" }} />}</button>
@@ -176,6 +179,7 @@ export default function App() {
             : vista.tipo === "obiettivi" ? <PaginaObiettivi ctx={ctx} />
             : vista.tipo === "organigramma" ? <PaginaOrg ctx={ctx} />
             : vista.tipo === "scadenze" ? <PaginaScadenze ctx={ctx} />
+            : vista.tipo === "bigliettini" ? <PaginaBigliettini ctx={ctx} />
             : vista.tipo === "vita" && haVita ? <PaginaVita ctx={ctx} />
             : <Dashboard ctx={ctx} />}
         </main>
