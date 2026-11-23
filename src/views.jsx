@@ -372,6 +372,7 @@ function Kpi({ ctx, azienda, scrive }) {
     try {
       for (const k of kpi) {
         if (!(k.id in valori) && !(k.id in note)) continue;
+        if (k.auto) { const es = d.kpi_valori.find((x) => x.kpi_id === k.id && x.settimana === sett); if (es) await salva("gs_kpi_valori", { id: es.id, nota: nota(k) || null }); continue; }
         const esiste = d.kpi_valori.find((x) => x.kpi_id === k.id && x.settimana === sett);
         const v = String(val(k)).replace(",", ".").trim();
         if (v === "" && esiste) { await elimina("gs_kpi_valori", esiste.id); continue; }
@@ -405,7 +406,8 @@ function Kpi({ ctx, azienda, scrive }) {
                   {ctx.admin && <button onClick={() => setModK(k)} style={{ border: "none", background: "none", color: C.grey, fontSize: 12 }}>modifica</button>}</div>
                 <div style={{ fontSize: 12, color: C.grey, marginTop: 2 }}>{resp ? (resp.nome ? `${resp.nome} · ${resp.ruolo}` : resp.ruolo) : k.responsabile || "—"} · {k.obiettivo != null ? `obiettivo ${k.direzione === "giu" ? "≤" : "≥"} ${num(k.obiettivo, k.unita)}` : "senza obiettivo"}</div>
               </div>
-              <Field value={val(k)} onChange={(v) => setValori((x) => ({ ...x, [k.id]: v }))} type="number" placeholder={{ "€": "€", n: "numero", h: "ore", mq: "mq", "%": "%" }[k.unita] || k.unita} />
+              {k.auto ? <div style={{ padding: "8px 2px" }}><div style={{ fontSize: 18, fontWeight: 650 }}>{val(k) === "" ? "—" : num(val(k), k.unita)}</div><div style={{ fontSize: 11.5, color: C.grey }}>automatico da Squadra</div></div>
+                : <Field value={val(k)} onChange={(v) => setValori((x) => ({ ...x, [k.id]: v }))} type="number" placeholder={{ "€": "€", n: "numero", h: "ore", mq: "mq", "%": "%" }[k.unita] || k.unita} />}
               <Field value={nota(k)} onChange={(v) => setNote((x) => ({ ...x, [k.id]: v }))} placeholder={es === "rosso" ? "Cosa è successo? Cosa fai?" : "Nota (facoltativa)"} />
               <Mini k={k} settimane={settimane} valori={d.kpi_valori} />
             </div>

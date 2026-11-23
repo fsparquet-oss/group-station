@@ -79,8 +79,8 @@ export function ControlliAzienda({ ctx, azienda, scrive, titolo, onApri }) {
             const v = val(c)?.valore;
             const inModifica = modifica === c.id;
             return (
-              <div key={c.id} onClick={() => { if (scrive && !inModifica) { setModifica(c.id); setTesto(v == null ? "" : String(v).replace(".", ",")); } }}
-                style={{ background: C.soft, borderRadius: 16, padding: "12px 14px", cursor: scrive ? "pointer" : "default", outline: inModifica ? `2px solid ${C.text}` : "none" }}>
+              <div key={c.id} onClick={() => { if (scrive && !c.auto && !inModifica) { setModifica(c.id); setTesto(v == null ? "" : String(v).replace(".", ",")); } }}
+                style={{ background: C.soft, borderRadius: 16, padding: "12px 14px", cursor: scrive && !c.auto ? "pointer" : "default", outline: inModifica ? `2px solid ${C.text}` : "none" }}>
                 <div style={{ fontSize: 13, color: C.slate, lineHeight: 1.3 }}>{c.nome}</div>
                 {inModifica ? (
                   <input autoFocus inputMode="decimal" value={testo} onChange={(e) => setTesto(e.target.value)} onBlur={() => salvaNumero(c)} onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); if (e.key === "Escape") setModifica(null); }}
@@ -89,6 +89,7 @@ export function ControlliAzienda({ ctx, azienda, scrive, titolo, onApri }) {
                   <div style={{ fontSize: v == null ? 14.5 : 21, fontWeight: 600, marginTop: v == null ? 8 : 4, color: coloreNumero(c, v) }}>{v == null ? (scrive ? "+ inserisci" : "—") : num(v, c.unita)}</div>
                 )}
                 {c.obiettivo != null && <div style={{ fontSize: 11.5, color: C.grey, marginTop: 2 }}>obiettivo {num(c.obiettivo, c.unita)}</div>}
+                {c.auto && <div style={{ fontSize: 11, color: C.grey, marginTop: 2 }}>automatico da Squadra</div>}
               </div>
             );
           })}

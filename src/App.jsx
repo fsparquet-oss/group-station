@@ -13,6 +13,8 @@ const ORDINE = { gs_aziende: "ordine", gs_kpi: "ordine", gs_persone: "ordine", g
 function useDati(attivo) {
   const [d, setD] = useState(null);
   const carica = useCallback(async () => {
+    // prima ricalcola i numeri che arrivano da Squadra (se la funzione non c'è ancora, va avanti lo stesso)
+    try { await supabase.rpc("gs_aggiorna_automatici"); } catch {}
     const res = await Promise.all(TABELLE.map((t) => {
       let q = supabase.from(t).select("*");
       q = ORDINE[t] ? q.order(ORDINE[t]).order("id") : q.order("id");
