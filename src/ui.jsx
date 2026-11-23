@@ -106,7 +106,7 @@ export function Segment({ items, value, onChange, accent = C.text, style }) {
 
 // Pulsante rosso fisso in basso (es. "+ Ruolo", "+ Scadenza")
 export const Fab = ({ children, onClick }) => (
-  <button onClick={onClick} style={{ position: "fixed", bottom: 22, left: "50%", transform: "translateX(-50%)", zIndex: 30, border: "none", borderRadius: 999, background: C.text, color: "#fff", fontSize: 15, fontWeight: 600, padding: "14px 24px", boxShadow: "0 10px 30px rgba(0,0,0,.25)" }}>{children}</button>
+  <button onClick={onClick} style={{ position: "fixed", bottom: window.innerWidth < 860 ? "calc(92px + env(safe-area-inset-bottom))" : 22, left: "50%", transform: "translateX(-50%)", zIndex: 30, border: "none", borderRadius: 999, background: C.text, color: "#fff", fontSize: 15, fontWeight: 600, padding: "14px 24px", boxShadow: "0 10px 30px rgba(0,0,0,.25)" }}>{children}</button>
 );
 
 export function Btn({ children, variant = "dark", small, style, ...p }) {

@@ -4,6 +4,7 @@ import { C, Logo, Btn, Card, Field, Vuoto, settimanaScorsa, oggi, vetro } from "
 import { Azienda, Accessi, scadenzeVicine } from "./views";
 import { Dashboard, PaginaOggi, PaginaObiettivi, PaginaOrg, PaginaScadenze } from "./dashboard";
 import { PaginaVita } from "./vita";
+import BottomNav from "./bottomnav";
 export { salva, elimina } from "./db";
 
 const TABELLE = ["gs_aziende", "gs_kpi", "gs_kpi_valori", "gs_persone", "gs_obiettivi", "gs_scadenze", "gs_attrezzature", "gs_procedure", "gs_documenti", "gs_onboarding", "gs_accessi", "gs_controlli", "gs_controlli_valori", "gs_vita_persone", "gs_vita_abitudini", "gs_vita_valori", "gs_vita_obiettivi", "gs_vita_fisse", "gs_vita_piani", "gs_vita_letture", "gs_vita_passi"];
@@ -140,6 +141,16 @@ export default function App() {
       </button>
     </div>
   );
+  const navVoci = [["home", "Dashboard"], ["oggi", "Oggi"], ["obiettivi", "Obiettivi"], ["organigramma", "Organigramma"]];
+  const navAttiva = navVoci.findIndex(([k]) => vista.tipo === k);
+  const bottomNav = mobile && (
+    <BottomNav
+      voci={[...navVoci.map(([k, l]) => ({ k, label: l, icon: <Icona k={k} size={21} /> })), { k: "altro", label: "Altro", icon: <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h10" /></svg> }]}
+      attiva={navAttiva < 0 || menu ? navVoci.length : navAttiva}
+      onSelect={(j) => (j < navVoci.length ? (setMenu(false), vai({ tipo: navVoci[j][0] })) : setMenu(true))}
+      colori={{ barra: C.card, pallino: C.text, iconaAttiva: "#fff", icona: C.grey, etichettaAttiva: C.text, ombra: "0 -4px 14px rgba(0,0,0,.06)" }}
+    />
+  );
   const tondo = { width: 42, height: 42, borderRadius: "50%", border: "none", background: C.card, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", color: C.text, flexShrink: 0 };
 
   return (
@@ -147,9 +158,8 @@ export default function App() {
       <div style={{ maxWidth: 1320, margin: "0 auto", display: "flex", gap: 22, ...(mobile ? {} : { ...vetro, borderRadius: 34, padding: 22, minHeight: "calc(100vh - 48px)" }) }}>
         {!mobile && <aside style={{ width: 228, flexShrink: 0, background: C.card, borderRadius: 26, padding: "22px 12px", position: "sticky", top: 46, alignSelf: "flex-start", height: "calc(100vh - 92px)", overflowY: "auto" }}>{barra}</aside>}
         {mobile && menu && <div onClick={() => setMenu(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.25)", zIndex: 60 }}><div onClick={(e) => e.stopPropagation()} style={{ width: 270, height: "100%", background: C.card, padding: "22px 12px", overflowY: "auto" }}>{barra}</div></div>}
-        <main style={{ flex: 1, minWidth: 0, padding: mobile ? "14px 14px 110px" : "6px 4px 60px" }}>
+        <main style={{ flex: 1, minWidth: 0, padding: mobile ? "14px 14px calc(120px + env(safe-area-inset-bottom))" : "6px 4px 60px" }}>
           <header style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
-            {mobile && <button onClick={() => setMenu(true)} style={tondo}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h10" /></svg></button>}
             <div style={{ fontSize: mobile ? 22 : 28, fontWeight: 650, letterSpacing: -0.6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{azienda ? azienda.nome : vista.tipo === "vita" ? "La mia vita" : `Ciao ${nomeBello}!`}</div>
             <div style={{ flex: 1 }} />
             {admin && !mobile && <button onClick={() => vai({ tipo: "obiettivi", nuovo: Date.now() })} style={{ border: "none", borderRadius: 999, background: C.text, color: "#fff", fontSize: 13.5, fontWeight: 500, padding: "11px 18px", display: "flex", alignItems: "center", gap: 7 }}>+ Nuovo obiettivo</button>}
@@ -168,6 +178,7 @@ export default function App() {
             : <Dashboard ctx={ctx} />}
         </main>
       </div>
+      {bottomNav}
     </div>
   );
 }

@@ -391,7 +391,7 @@ function Kpi({ ctx, azienda, scrive }) {
         <Btn small variant="ghost" onClick={() => cambiaSett(1)}>›</Btn>
         <div style={{ flex: 1 }} />
         {ctx.admin && <Btn small variant="ghost" onClick={() => setModK({ azienda_id: azienda.id, unita: "n", direzione: "su" })}>＋ KPI</Btn>}
-        {scrive && <Btn small onClick={salvaTutto} disabled={!modificato || salvo} style={ctx.mobile && modificato ? { position: "fixed", bottom: 18, left: "50%", transform: "translateX(-50%)", zIndex: 30, padding: "13px 26px", fontSize: 15, boxShadow: "0 8px 24px rgba(0,0,0,.2)" } : undefined}>{salvo ? "Salvo…" : "Salva i numeri"}</Btn>}
+        {scrive && <Btn small onClick={salvaTutto} disabled={!modificato || salvo} style={ctx.mobile && modificato ? { position: "fixed", bottom: "calc(92px + env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)", zIndex: 30, padding: "13px 26px", fontSize: 15, boxShadow: "0 8px 24px rgba(0,0,0,.2)" } : undefined}>{salvo ? "Salvo…" : "Salva i numeri"}</Btn>}
       </div>
       <Card style={{ padding: 0, overflow: "hidden" }}>
         {kpi.length === 0 && <Vuoto>Nessun KPI per questa azienda.</Vuoto>}
